@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // DELETE /api/gallery/[code]: delete gallery, all images, and (future) users
-export async function DELETE(req: NextRequest, { params }: { params: { code: string } }) {
-  const { code } = params;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function DELETE(req: NextRequest, context: any) {
+  const { code } = context.params;
   // Delete all images for this gallery
   await prisma.image.deleteMany({ where: { code } });
   // Delete the gallery

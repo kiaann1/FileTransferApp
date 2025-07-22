@@ -6,8 +6,9 @@ import fs from 'fs/promises';
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 // DELETE /api/gallery/[code]/images/[imageId]: delete an image
-export async function DELETE(req: NextRequest, { params }: { params: { code: string, imageId: string } }) {
-  const { code, imageId } = params;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function DELETE(req: NextRequest, context: any) {
+  const { code, imageId } = context.params;
   const image = await prisma.image.findUnique({ where: { id: Number(imageId) } });
   if (!image || image.code !== code) {
     return NextResponse.json({ error: 'Image not found' }, { status: 404 });

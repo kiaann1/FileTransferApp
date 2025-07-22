@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // POST /api/gallery/[code]/images/move
-export async function POST(req: NextRequest, { params }: { params: { code: string } }) {
-  const { code } = params;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function POST(req: NextRequest, context: any) {
+  const { code } = context.params;
   const { newCode } = await req.json();
   // Move all images to new gallery code
   await prisma.image.updateMany({

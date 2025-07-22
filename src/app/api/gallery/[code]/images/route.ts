@@ -6,8 +6,9 @@ import fs from 'fs/promises';
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 // GET /api/gallery/[code]/images: fetch all images for a gallery
-export async function GET(req: NextRequest, { params }: { params: { code: string } }) {
-  const { code } = params;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function GET(req: NextRequest, context: any) {
+  const { code } = context.params;
   const images = await prisma.image.findMany({
     where: { code },
     orderBy: { createdAt: 'desc' },
@@ -16,8 +17,9 @@ export async function GET(req: NextRequest, { params }: { params: { code: string
 }
 
 // POST /api/gallery/[code]/images: upload an image
-export async function POST(req: NextRequest, { params }: { params: { code: string } }) {
-  const { code } = params;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function POST(req: NextRequest, context: any) {
+  const { code } = context.params;
   const formData = await req.formData();
   const file = formData.get('file') as File;
   if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });

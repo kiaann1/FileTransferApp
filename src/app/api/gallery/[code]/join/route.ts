@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { cookies } from 'next/headers';
 
 // POST /api/gallery/[code]/join
-export async function POST(req: NextRequest, { params }: { params: { code: string } }) {
-  const { code } = params;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function POST(req: NextRequest, context: any) {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get('session_user_id')?.value;
+  const { code } = context.params;
   const { password } = await req.json();
+  if (!userId) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   if (!password) return NextResponse.json({ error: 'Password required' }, { status: 400 });
   const gallery = await prisma.gallery.findUnique({ where: { code }, select: { passwordHash: true } });
   if (!gallery || !gallery.passwordHash) return NextResponse.json({ error: 'Gallery not found' }, { status: 404 });
   const valid = await bcrypt.compare(password, gallery.passwordHash);
   if (!valid) return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
-  // TODO: Add user to gallery user list (future)
-  return NextResponse.json({ success: true });
+  // Assign viewer role to joiner
+  await prisma.galleryRole.create({
+    data: {
+      galleryCode: code,
+      userId,
+      role: 'viewer',
+    },
+  });
+  return NextResponse.json({ success: true, role: 'viewer' });
 }

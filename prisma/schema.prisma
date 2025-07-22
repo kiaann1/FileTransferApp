@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 model Gallery {
@@ -14,6 +14,7 @@ model Gallery {
   passwordHash String?
   createdAt   DateTime @default(now())
   images      Image[]
+  roles       GalleryRole[]
 }
 
 model Image {
@@ -22,4 +23,31 @@ model Image {
   filename  String
   createdAt DateTime @default(now())
   gallery   Gallery  @relation(fields: [code], references: [code])
+}
+
+model User {
+  id        String        @id @default(uuid())
+  username  String        @unique
+  passwordHash String
+  createdAt DateTime      @default(now())
+  roles     GalleryRole[]
+}
+
+model GalleryRole {
+  id          Int      @id @default(autoincrement())
+  galleryCode String
+  userId      String
+  role        Role
+  createdAt   DateTime @default(now())
+
+  gallery     Gallery  @relation(fields: [galleryCode], references: [code])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([galleryCode, userId])
+}
+
+enum Role {
+  owner
+  admin
+  viewer
 }
