@@ -15,29 +15,19 @@ async function generateUniqueCode() {
   return code;
 }
 
-// POST /api/gallery: create a new gallery with a unique code and password
+// POST /api/gallery: create a new gallery with a unique code and optional password
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('session_user_id')?.value;
   const { password } = await req.json();
-  if (!userId) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-  }
-  if (!password || password.length < 4) {
-    return NextResponse.json({ error: 'Password required (min 4 chars)' }, { status: 400 });
-  }
   const code = await generateUniqueCode();
-  const passwordHash = await bcrypt.hash(password, 10);
+  let passwordHash = null;
+  if (password && password.length > 0) {
+    if (password.length < 4) {
+      return NextResponse.json({ error: 'Password must be at least 4 characters' }, { status: 400 });
+    }
+    passwordHash = await bcrypt.hash(password, 10);
+  }
   const gallery = await prisma.gallery.create({ data: { code, passwordHash } });
-  // Assign owner role to creator
-  await prisma.galleryRole.create({
-    data: {
-      galleryCode: code,
-      userId,
-      role: 'owner',
-    },
-  });
-  return NextResponse.json({ code, createdAt: gallery.createdAt, role: 'owner' });
+  return NextResponse.json({ code, createdAt: gallery.createdAt });
 }
 
 // GET /api/gallery: list all galleries

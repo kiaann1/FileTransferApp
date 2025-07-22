@@ -295,6 +295,11 @@ export default function GalleryPage() {
     </svg>
   );
 
+  // Helper to get file icon (always generic)
+  function getFileIcon(filename: string) {
+    return "/file.svg";
+  }
+
   return (
     <>
       <header className="gallery-header">
@@ -335,17 +340,31 @@ export default function GalleryPage() {
         style={{cursor:'pointer'}}
       >
         <div className="hero-icon">📁</div>
-        <div className="hero-text">Drag & drop or paste image(s) here</div>
-        <input type="file" accept="image/*" multiple ref={fileInputRef} style={{display:'none'}} onChange={onFileChange} />
+        <div className="hero-text">Drag & drop or paste file(s) here</div>
+        <input type="file" multiple ref={fileInputRef} style={{display:'none'}} onChange={onFileChange} />
         <button className="upload-btn" onClick={e => {e.stopPropagation();onBrowse();}} disabled={uploading}>{uploading ? 'Uploading...' : 'Browse'}</button>
-        <div style={{fontSize:'0.98rem',color:'#b6b6d6',marginTop:2}}>PNG, JPG, GIF, WEBP — Multi-select supported</div>
+        <div style={{fontSize:'0.98rem',color:'#b6b6d6',marginTop:2}}>Any file type — Multi-select supported</div>
       </div>
       <div id="copy-notice" style={{display:'none',position:'fixed',top:32,left:'50%',transform:'translateX(-50%)',zIndex:1000,background:'linear-gradient(90deg,#6366f1 0%,#06b6d4 100%)',color:'#fff',padding:'12px 32px',borderRadius:'32px',fontSize:'1.1rem',fontWeight:600,boxShadow:'0 4px 24px rgba(99,102,241,0.13)',pointerEvents:'none',transition:'opacity 0.2s',opacity:0}}>Image copied!</div>
       <div className={modalImg ? 'modal open' : 'modal'} id="imgModal" onClick={e => {if(e.target===e.currentTarget) closeModal();}}>
         <div className="modal-content">
           <button className="modal-close" onClick={closeModal} title="Close">✕</button>
-          {modalImg && <img className="modal-img" src={modalImg} alt="Preview" />}
+          {modalImg && (/\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(modalImg) ? (
+            <img className="modal-img" src={modalImg} alt="Preview" />
+          ) : (
+            <div style={{fontSize:'2.5rem',margin:'32px 0'}}>📄</div>
+          ))}
           <div id="modalMeta" style={{marginTop:18,fontSize:'1.08rem',color:'var(--text-main)',textAlign:'center'}} dangerouslySetInnerHTML={{__html: modalMeta}} />
+          {modalImg && (/\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(modalImg)) && (
+            <div style={{display:'flex',justifyContent:'center',gap:16,marginTop:12}}>
+              <a href={modalImg} download className="file-download-btn" style={{fontSize:'1.05rem',color:'#6366f1',textDecoration:'underline',display:'flex',alignItems:'center',gap:4}}>
+                <img src="/download.svg" alt="Download" style={{width:18,height:18,verticalAlign:'middle'}} />
+              </a>
+              <button className="file-download-btn" style={{fontSize:'1.05rem',color:'#6366f1',background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:4}} onClick={()=>copyImage(modalImg.replace('/uploads/',''))}>
+                📋
+              </button>
+            </div>
+          )}
         </div>
       </div>
       {showManage && (
@@ -361,27 +380,48 @@ export default function GalleryPage() {
       )}
       <div className="library-row" id="library">
         {loading ? (
-          <div style={{textAlign:'center',color:'#b6b6d6',width:'100%'}}>Loading images...</div>
+          <div style={{textAlign:'center',color:'#b6b6d6',width:'100%'}}>Loading files...</div>
         ) : images.length === 0 ? (
-          <div style={{textAlign:'center',color:'#b6b6d6',width:'100%'}}>No images yet. Upload or paste to get started!</div>
+          <div style={{textAlign:'center',color:'#b6b6d6',width:'100%'}}>No files yet. Upload or paste to get started!</div>
         ) : (
-          images.map(img => (
-            <div key={img.id} style={{position:'relative',display:'inline-block'}} className="img-wrapper">
-              <img
-                src={`/uploads/${img.filename}`}
-                className="library-img"
-                title="Click to copy"
-                style={{userSelect:'none'}}
-                onClick={() => copyImage(img.filename)}
-                onDoubleClick={() => openModal(img.filename)}
-                draggable={false}
-              />
-              <div className="img-actions">
-                <button className="img-btn preview" title="Preview image" onClick={e => {e.stopPropagation();openModal(img.filename);}}>🔍</button>
-                <button className="img-btn delete" title="Delete image" onClick={e => {e.stopPropagation();deleteImage(img.id);}}>🗑️</button>
+          images.map(img => {
+            const isImage = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(img.filename);
+            return (
+              <div key={img.id} style={{position:'relative',display:'inline-block',width:160}} className="img-wrapper">
+                {isImage ? (
+                  <img
+                    src={`/uploads/${img.filename}`}
+                    className="library-img"
+                    title="Click to copy"
+                    style={{userSelect:'none'}}
+                    onClick={() => copyImage(img.filename)}
+                    onDoubleClick={() => openModal(img.filename)}
+                    draggable={false}
+                  />
+                ) : (
+                  <div className="library-file-box" style={{height:150,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',borderRadius:12,background:'var(--img-bg)',boxShadow:'0 2px 12px rgba(80,80,120,0.10)',border:'2.5px solid transparent',padding:12}}>
+                    <img src={getFileIcon(img.filename)} alt="File icon" style={{width:48,height:48,marginBottom:8,filter:'drop-shadow(0 1px 2px #bbb)'}} />
+                    <div style={{fontSize:'0.98rem',wordBreak:'break-all',textAlign:'center',color:'var(--primary)',background:'rgba(255,255,255,0.85)',borderRadius:4,padding:'2px 4px',boxShadow:'0 1px 2px #eee'}}>{img.filename}</div>
+                    <a href={`/uploads/${img.filename}`} download className="file-download-btn" style={{marginTop:8,fontSize:'0.95rem',color:'#6366f1',textDecoration:'underline',display:'flex',alignItems:'center',gap:4}}>
+                      <img src="/download.svg" alt="Download" style={{width:18,height:18,verticalAlign:'middle'}} /> Download
+                    </a>
+                  </div>
+                )}
+                <div className="img-actions">
+                  {isImage && (
+                    <>
+                      <button className="img-btn preview" title="Preview image" onClick={e => {e.stopPropagation();openModal(img.filename);}}>🔍</button>
+                      <a href={`/uploads/${img.filename}`} download className="img-btn" title="Download image" onClick={e => e.stopPropagation()} style={{background:'var(--delete-bg)',color:'var(--primary)'}}>
+                        <img src="/download.svg" alt="Download" style={{width:16,height:16,verticalAlign:'middle'}} />
+                      </a>
+                      <button className="img-btn" title="Copy image to clipboard" onClick={e => {e.stopPropagation();copyImage(img.filename);}} style={{background:'var(--delete-bg)',color:'var(--primary)'}}>📋</button>
+                    </>
+                  )}
+                  <button className="img-btn delete" title="Delete file" onClick={e => {e.stopPropagation();deleteImage(img.id);}}>🗑️</button>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
       <style jsx global>{`
@@ -475,6 +515,87 @@ export default function GalleryPage() {
         .upload-btn:hover {
           background: linear-gradient(90deg, #6366f1 0%, #2563eb 100%);
           transform: translateY(-2px) scale(1.04);
+        }
+        .gallery-header {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 0.5rem;
+          padding: 0.75rem 1.5rem 0.5rem 1.5rem;
+          background: var(--hero-bg);
+          border-bottom: 1.5px solid var(--border-main);
+          box-shadow: 0 2px 8px rgba(80,80,120,0.04);
+          position: sticky;
+          top: 0;
+          z-index: 100;
+        }
+        .gallery-header-bar {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          margin: 32px 0 0 0;
+          font-size: 1.08rem;
+          letter-spacing: 0.01em;
+          opacity: 0.85;
+          user-select: none;
+        }
+        .gallery-header-label {
+          color: var(--text-main);
+          font-weight: 500;
+        }
+        .gallery-header-code {
+          font-family: monospace;
+          color: var(--primary);
+          font-size: 1.18rem;
+          margin: 0 0.25rem;
+          padding: 2px 8px;
+          border-radius: 6px;
+          background: var(--img-bg);
+        }
+        .gallery-header-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--hero-bg);
+          color: var(--primary);
+          border: 2px solid var(--primary);
+          border-radius: 50%;
+          width: 32px;
+          height: 32px;
+          font-size: 1.1rem;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, color 0.2s, border 0.2s;
+          margin-left: 0.15rem;
+          padding: 0;
+        }
+        .gallery-header-icon:hover {
+          background: var(--primary);
+          color: #fff;
+          border-color: var(--primary2);
+        }
+        .header-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--hero-bg);
+          color: var(--primary);
+          border: 2px solid var(--primary);
+          border-radius: 50%;
+          width: 38px;
+          height: 38px;
+          font-size: 1.2rem;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, color 0.2s, border 0.2s;
+          margin-left: 0.15rem;
+          padding: 0;
+        }
+        .header-btn:hover {
+          background: var(--primary);
+          color: #fff;
+          border-color: var(--primary2);
         }
         .library-row {
           display: flex;
@@ -628,229 +749,63 @@ export default function GalleryPage() {
           z-index: 20 !important;
         }
         @media (max-width: 700px) {
-          .hero {
-            min-height: 200px;
-            margin: 16px 8px 24px 8px;
-            max-width: 98vw;
+          .gallery-header {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem 0.5rem 1.5rem;
           }
-          .library-row {
-            gap: 10px;
-            padding: 0 6vw 24px 6vw;
+          .gallery-header-bar {
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            margin: 32px 0 0 0;
+            font-size: 1.08rem;
+            gap: 0.5rem;
+            width: auto;
+          }
+          .gallery-header-label, .gallery-header-code {
+            display: inline;
+            text-align: left;
+            width: auto;
+            margin-bottom: 0;
+          }
+          .gallery-header-code {
+            font-size: 1.18rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: var(--img-bg);
+            word-break: normal;
+          }
+          .gallery-header-icon, .header-btn {
+            width: 38px;
+            height: 38px;
+            font-size: 1.2rem;
+            border-radius: 50%;
+            margin: 0 0.15rem 0 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+        }
+        @media (max-width: 480px) {
+          .img-wrapper {
+            width: 70px !important;
           }
           .library-img {
-            height: 60px;
-            border-radius: 8px;
+            height: 32px;
           }
-        }
-        .deleteall-toggle {
-          background: var(--hero-bg);
-          color: var(--primary);
-          border: 2px solid var(--primary);
-          border-radius: 50%;
-          width: 44px;
-          height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.5rem;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-          transition: background 0.2s, color 0.2s;
-          margin-left: 0;
-        }
-        .deleteall-toggle:hover {
-          background: var(--primary);
-          color: #fff;
-        }
-        .deleteall-toggle:active {
-          background: #ef4444;
-          color: #fff;
-        }
-        .regen-toggle {
-          background: var(--hero-bg);
-          color: var(--primary);
-          border: 2px solid var(--primary);
-          border-radius: 50%;
-          width: 44px;
-          height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.5rem;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-          transition: background 0.2s, color 0.2s;
-          margin-left: 0;
-        }
-        .regen-toggle:hover {
-          background: var(--primary);
-          color: #fff;
-        }
-        .regen-toggle:active {
-          background: #06b6d4;
-          color: #fff;
-        }
-        .regen-icon {
-          font-size: 1.5rem;
-          line-height: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .home-toggle {
-          background: var(--hero-bg);
-          color: var(--primary);
-          border: 2px solid var(--primary);
-          border-radius: 50%;
-          width: 44px;
-          height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.5rem;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-          transition: background 0.2s, color 0.2s;
-          margin-left: 0;
-          text-decoration: none;
-        }
-        .home-toggle:hover {
-          background: var(--primary);
-          color: #fff;
-        }
-        .manage-toggle {
-          background: var(--hero-bg);
-          color: var(--primary);
-          border: 2px solid var(--primary);
-          border-radius: 50%;
-          width: 44px;
-          height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.5rem;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-          transition: background 0.2s, color 0.2s;
-          margin-left: 0;
-        }
-        .manage-toggle:hover {
-          background: var(--primary);
-          color: #fff;
-        }
-        .copy-inline {
-          background: var(--hero-bg);
-          color: var(--primary);
-          border: 2px solid var(--primary);
-          border-radius: 50%;
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.1rem;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-          transition: background 0.2s, color 0.2s;
-          margin-left: 0;
-        }
-        .copy-inline:hover {
-          background: var(--primary);
-          color: #fff;
-        }
-        .copy-icon {
-          font-size: 1.1rem;
-        }
-        .manage-modal-content, .manage-modal-title, .manage-modal-desc {
-          color: #232946;
-        }
-        body.dark .manage-modal-content, body.dark .manage-modal-title, body.dark .manage-modal-desc {
-          color: #e0e7ff;
-        }
-        .gallery-header {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem 0.5rem 1.5rem;
-          background: var(--hero-bg);
-          border-bottom: 1.5px solid var(--border-main);
-          box-shadow: 0 2px 8px rgba(80,80,120,0.04);
-          position: sticky;
-          top: 0;
-          z-index: 100;
-        }
-        .header-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--hero-bg);
-          color: var(--primary);
-          border: 2px solid var(--primary);
-          border-radius: 50%;
-          width: 38px;
-          height: 38px;
-          font-size: 1.2rem;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-          transition: background 0.2s, color 0.2s, border 0.2s;
-          margin-left: 0.15rem;
-          padding: 0;
-        }
-        .header-btn:hover {
-          background: var(--primary);
-          color: #fff;
-          border-color: var(--primary2);
-        }
-        .gallery-header-bar {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          margin: 32px 0 0 0;
-          font-size: 1.08rem;
-          letter-spacing: 0.01em;
-          opacity: 0.85;
-          user-select: none;
-        }
-        .gallery-header-label {
-          color: var(--text-main);
-          font-weight: 500;
-        }
-        .gallery-header-code {
-          font-family: monospace;
-          color: var(--primary);
-          font-size: 1.18rem;
-          margin: 0 0.25rem;
-          padding: 2px 8px;
-          border-radius: 6px;
-          background: var(--img-bg);
-        }
-        .gallery-header-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--hero-bg);
-          color: var(--primary);
-          border: 2px solid var(--primary);
-          border-radius: 50%;
-          width: 32px;
-          height: 32px;
-          font-size: 1.1rem;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-          transition: background 0.2s, color 0.2s, border 0.2s;
-          margin-left: 0.15rem;
-          padding: 0;
-        }
-        .gallery-header-icon:hover {
-          background: var(--primary);
-          color: #fff;
-          border-color: var(--primary2);
-        }
-        .copy-icon, .regen-icon {
-          font-size: 1.1rem;
+          .modal-content {
+            padding: 4px 0 4px 0;
+          }
+          .modal-img {
+            max-width: 98vw;
+            max-height: 30vh;
+          }
+          .gallery-header {
+            padding: 0.2rem 0.2rem 0.1rem 0.2rem;
+          }
         }
       `}</style>
     </>

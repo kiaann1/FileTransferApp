@@ -23,20 +23,20 @@ export default function Home() {
 
   const handleCreate = async () => {
     const { value: password } = await Swal.fire({
-      title: 'Set a password for your gallery',
+      title: 'Set a password for your gallery (optional)',
       input: 'password',
-      inputLabel: 'Password (min 4 chars)',
-      inputPlaceholder: 'Enter a password',
-      inputAttributes: { minlength: "4", autocapitalize: 'off', autocorrect: 'off' },
+      inputLabel: 'Password (optional, min 4 chars if set)',
+      inputPlaceholder: 'Leave blank for no password',
+      inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
       showCancelButton: true,
       confirmButtonText: 'Create',
       background: document.body.classList.contains('dark') ? '#232946' : '#fff',
       color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
       inputValidator: (value) => {
-        if (!value || value.length < 4) return 'Password must be at least 4 characters';
+        if (value && value.length > 0 && value.length < 4) return 'Password must be at least 4 characters';
       }
     });
-    if (!password) return;
+    if (password === undefined) return;
     setLoading(true);
     setError("");
     try {
@@ -139,7 +139,6 @@ export default function Home() {
       body: JSON.stringify({ password })
     });
     if (res.ok) {
-      // TODO: Add user to gallery user list (future)
       router.push(`/gallery/${code}`);
     } else {
       const data = await res.json();
