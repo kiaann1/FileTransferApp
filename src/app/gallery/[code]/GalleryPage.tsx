@@ -1,0 +1,858 @@
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
+
+interface ImageItem {
+  id: number;
+  filename: string;
+  createdAt: string;
+}
+
+export default function GalleryPage() {
+  const { code } = useParams<{ code: string }>();
+  const router = useRouter();
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [dark, setDark] = useState(false);
+  const [modalImg, setModalImg] = useState<string | null>(null);
+  const [modalMeta, setModalMeta] = useState<string>("");
+  const [showManage, setShowManage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropAreaRef = useRef<HTMLDivElement>(null);
+
+  // Fetch images
+  useEffect(() => {
+    if (!code) return;
+    setLoading(true);
+    fetch(`/api/gallery/${code}/images`)
+      .then((res) => res.json())
+      .then(setImages)
+      .catch(() => setError("Failed to load images."))
+      .finally(() => setLoading(false));
+  }, [code]);
+
+  // Upload handler
+  const uploadImage = async (file: File) => {
+    setUploading(true);
+    setError("");
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`/api/gallery/${code}/images`, {
+      method: "POST",
+      body: formData,
+    });
+    if (res.ok) {
+      const img = await res.json();
+      setImages((prev) => [img, ...prev]);
+    } else {
+      setError("Upload failed.");
+    }
+    setUploading(false);
+  };
+
+  // Drag & drop
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dropAreaRef.current?.classList.remove("dragover");
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      Array.from(e.dataTransfer.files).forEach(uploadImage);
+    }
+  };
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    dropAreaRef.current?.classList.add("dragover");
+  };
+  const onDragLeave = () => {
+    dropAreaRef.current?.classList.remove("dragover");
+  };
+
+  // Paste
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      // Prefer files if available
+      if (e.clipboardData?.files && e.clipboardData.files.length > 0) {
+        Array.from(e.clipboardData.files).forEach(uploadImage);
+        return;
+      }
+      // Fallback: check items for images
+      if (e.clipboardData?.items) {
+        for (let i = 0; i < e.clipboardData.items.length; i++) {
+          const item = e.clipboardData.items[i];
+          if (item.type.startsWith('image/')) {
+            const file = item.getAsFile();
+            if (file) uploadImage(file);
+          }
+        }
+      }
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, []);
+
+  // Browse
+  const onBrowse = () => fileInputRef.current?.click();
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      Array.from(e.target.files).forEach(uploadImage);
+    }
+  };
+
+  // Delete
+  const deleteImage = async (id: number) => {
+    const result = await Swal.fire({
+      title: 'Delete this image?',
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Delete',
+      background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+      color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+    });
+    if (!result.isConfirmed) return;
+    await fetch(`/api/gallery/${code}/images/${id}`, { method: "DELETE" });
+    setImages((prev) => prev.filter((img) => img.id !== id));
+    await Swal.fire({
+      title: 'Deleted!',
+      text: 'The image has been removed.',
+      icon: 'success',
+      timer: 1200,
+      showConfirmButton: false,
+      background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+      color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+    });
+  };
+
+  // Delete all
+  const deleteAll = async () => {
+    if (!images.length) return;
+    const result = await Swal.fire({
+      title: 'Delete all images?',
+      text: 'This will remove all images from your library. This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Delete All',
+      background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+      color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+    });
+    if (!result.isConfirmed) return;
+    await Promise.all(images.map(img => fetch(`/api/gallery/${code}/images/${img.id}`, { method: "DELETE" })));
+    setImages([]);
+    await Swal.fire({
+      title: 'Deleted!',
+      text: 'All images have been removed.',
+      icon: 'success',
+      timer: 1200,
+      showConfirmButton: false,
+      background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+      color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+    });
+  };
+
+  // Copy to clipboard
+  const copyImage = async (filename: string) => {
+    try {
+      const res = await fetch(`/uploads/${filename}`);
+      const blob = await res.blob();
+      await navigator.clipboard.write([
+        new window.ClipboardItem({ [blob.type]: blob })
+      ]);
+      showCopyNotice();
+    } catch {
+      alert("Failed to copy image.");
+    }
+  };
+
+  // Modal
+  const openModal = async (filename: string) => {
+    const url = `/uploads/${filename}`;
+    setModalImg(url);
+    setModalMeta('Loading...');
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const type = blob.type;
+      const size = blob.size;
+      // Wait for image to load to get resolution
+      const img = new window.Image();
+      img.src = url;
+      img.onload = () => {
+        const dims = `${img.naturalWidth} × ${img.naturalHeight}px`;
+        setModalMeta(
+          `<b>Filename:</b> ${filename}<br>` +
+          `<b>Type:</b> ${type || 'Unknown'}<br>` +
+          `<b>Size:</b> ${formatSize(size)}<br>` +
+          `<b>Resolution:</b> ${dims}`
+        );
+      };
+    } catch {
+      setModalMeta('Could not load image info.');
+    }
+  };
+
+  function formatSize(bytes: number) {
+    if (bytes > 1e6) return (bytes/1e6).toFixed(2) + ' MB';
+    if (bytes > 1e3) return (bytes/1e3).toFixed(1) + ' KB';
+    return bytes + ' B';
+  }
+
+  const closeModal = () => setModalImg(null);
+
+  // Dark mode
+  useEffect(() => {
+    if (dark) document.body.classList.add("dark");
+    else document.body.classList.remove("dark");
+  }, [dark]);
+
+  // Copy notice
+  const showCopyNotice = () => {
+    const notice = document.getElementById('copy-notice');
+    if (!notice) return;
+    notice.style.display = 'block';
+    notice.style.opacity = '1';
+    clearTimeout((window as any)._copyNoticeTimeout);
+    (window as any)._copyNoticeTimeout = setTimeout(() => {
+      notice.style.opacity = '0';
+      setTimeout(() => { notice.style.display = 'none'; }, 300);
+    }, 1100);
+  };
+
+  // Regenerate gallery code
+  const regenerateCode = async () => {
+    const result = await Swal.fire({
+      title: 'Generate a new gallery code?',
+      text: 'This will move all images to a new code and redirect you.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#6366f1',
+      cancelButtonColor: '#b6b6d6',
+      confirmButtonText: 'Yes, generate new code',
+      background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+      color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+    });
+    if (!result.isConfirmed) return;
+    // 1. Create new gallery
+    const res = await fetch("/api/gallery", { method: "POST" });
+    const data = await res.json();
+    if (!data.code) {
+      await Swal.fire({
+        title: 'Failed',
+        text: 'Failed to generate new code.',
+        icon: 'error',
+        background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+        color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+      });
+      return;
+    }
+    const newCode = data.code;
+    // 2. Move all images to new gallery
+    await fetch(`/api/gallery/${code}/images/move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newCode }),
+    });
+    // 3. Redirect
+    await Swal.fire({
+      title: 'Gallery code changed!',
+      text: `Your new code is ${newCode}`,
+      icon: 'success',
+      background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+      color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+      timer: 1800,
+      showConfirmButton: false,
+    });
+    router.push(`/gallery/${newCode}`);
+  };
+
+  // SVG ICONS
+  const HomeIcon = () => (
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l9-9 9 9M4 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-6 0h6" /></svg>
+  );
+  const ManageIcon = () => (
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" /><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={2} /></svg>
+  );
+  const DarkIcon = ({dark}:{dark:boolean}) => dark
+    ? (<svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.95l-.71.71M21 12h-1M4 12H3m16.95 7.05l-.71-.71M4.05 4.05l-.71-.71" /><circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth={2} /></svg>)
+    : (<svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" /></svg>);
+  const DeleteAllIcon = () => (
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+  );
+  const CopyIcon = () => (
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" strokeWidth={2}/><rect x="3" y="3" width="13" height="13" rx="2" stroke="currentColor" strokeWidth={2}/></svg>
+  );
+  const RegenIcon = () => (
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path d="M4.93 19.07A10 10 0 1 1 21 12" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <polyline points="20 8 20 12 16 12" stroke="currentColor" strokeWidth="2" fill="none"/>
+    </svg>
+  );
+
+  return (
+    <>
+      <header className="gallery-header">
+        <Link href="/" className="header-btn" title="Back to Home"><HomeIcon /></Link>
+        <button className="header-btn" onClick={()=>setShowManage(true)} title="Manage gallery"><ManageIcon /></button>
+        <button className="header-btn" onClick={()=>setDark(d=>!d)} title="Toggle dark mode"><DarkIcon dark={dark} /></button>
+        <button className="header-btn" onClick={deleteAll} title="Delete all images"><DeleteAllIcon /></button>
+      </header>
+      <div className="gallery-header-bar">
+        <span className="gallery-header-label">Gallery code:</span>
+        <b className="gallery-header-code">{code}</b>
+        <button className="gallery-header-icon copy-inline" onClick={async()=>{
+          await navigator.clipboard.writeText(code as string);
+          await Swal.fire({
+            title: 'Copied!',
+            text: 'Gallery code copied to clipboard.',
+            icon: 'success',
+            timer: 1000,
+            showConfirmButton: false,
+            background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+            color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+          });
+        }} title="Copy code">
+          <CopyIcon />
+        </button>
+        <button className="gallery-header-icon regen-inline" onClick={regenerateCode} title="Regenerate gallery code">
+          <RegenIcon />
+        </button>
+      </div>
+      <div style={{position:'fixed',top:18,right:320,zIndex:1300,display:'flex',gap:10,alignItems:'center'}}>      </div>
+      <div style={{position:'fixed',top:18,right:200,zIndex:1300,display:'flex',gap:10,alignItems:'center'}}>
+      </div>
+      <div ref={dropAreaRef} className="hero" id="drop-area"
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onClick={onBrowse}
+        style={{cursor:'pointer'}}
+      >
+        <div className="hero-icon">📁</div>
+        <div className="hero-text">Drag & drop or paste image(s) here</div>
+        <input type="file" accept="image/*" multiple ref={fileInputRef} style={{display:'none'}} onChange={onFileChange} />
+        <button className="upload-btn" onClick={e => {e.stopPropagation();onBrowse();}} disabled={uploading}>{uploading ? 'Uploading...' : 'Browse'}</button>
+        <div style={{fontSize:'0.98rem',color:'#b6b6d6',marginTop:2}}>PNG, JPG, GIF, WEBP — Multi-select supported</div>
+      </div>
+      <div id="copy-notice" style={{display:'none',position:'fixed',top:32,left:'50%',transform:'translateX(-50%)',zIndex:1000,background:'linear-gradient(90deg,#6366f1 0%,#06b6d4 100%)',color:'#fff',padding:'12px 32px',borderRadius:'32px',fontSize:'1.1rem',fontWeight:600,boxShadow:'0 4px 24px rgba(99,102,241,0.13)',pointerEvents:'none',transition:'opacity 0.2s',opacity:0}}>Image copied!</div>
+      <div className={modalImg ? 'modal open' : 'modal'} id="imgModal" onClick={e => {if(e.target===e.currentTarget) closeModal();}}>
+        <div className="modal-content">
+          <button className="modal-close" onClick={closeModal} title="Close">✕</button>
+          {modalImg && <img className="modal-img" src={modalImg} alt="Preview" />}
+          <div id="modalMeta" style={{marginTop:18,fontSize:'1.08rem',color:'var(--text-main)',textAlign:'center'}} dangerouslySetInnerHTML={{__html: modalMeta}} />
+        </div>
+      </div>
+      {showManage && (
+        <div className="modal open" style={{zIndex:3000}}>
+          <div className="modal-content manage-modal-content">
+            <button className="modal-close" onClick={()=>setShowManage(false)} title="Close">✕</button>
+            <h2 className="manage-modal-title">Manage Gallery</h2>
+            <div className="manage-modal-desc">Who has access, roles, and revoke access UI goes here.</div>
+            {/* TODO: Implement actual user/role management logic */}
+            <div className="manage-modal-desc" style={{fontSize:'0.98rem'}}>Feature coming soon: assign roles, invite users, revoke access.</div>
+          </div>
+        </div>
+      )}
+      <div className="library-row" id="library">
+        {loading ? (
+          <div style={{textAlign:'center',color:'#b6b6d6',width:'100%'}}>Loading images...</div>
+        ) : images.length === 0 ? (
+          <div style={{textAlign:'center',color:'#b6b6d6',width:'100%'}}>No images yet. Upload or paste to get started!</div>
+        ) : (
+          images.map(img => (
+            <div key={img.id} style={{position:'relative',display:'inline-block'}} className="img-wrapper">
+              <img
+                src={`/uploads/${img.filename}`}
+                className="library-img"
+                title="Click to copy"
+                style={{userSelect:'none'}}
+                onClick={() => copyImage(img.filename)}
+                onDoubleClick={() => openModal(img.filename)}
+                draggable={false}
+              />
+              <div className="img-actions">
+                <button className="img-btn preview" title="Preview image" onClick={e => {e.stopPropagation();openModal(img.filename);}}>🔍</button>
+                <button className="img-btn delete" title="Delete image" onClick={e => {e.stopPropagation();deleteImage(img.id);}}>🗑️</button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      <style jsx global>{`
+        :root {
+          --bg-gradient: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);
+          --hero-bg: #fff;
+          --text-main: #7a7a9a;
+          --border-main: #b6b6d6;
+          --primary: #6366f1;
+          --primary2: #06b6d4;
+          --shadow: 0 6px 32px 0 rgba(80,80,120,0.08);
+          --img-bg: #fff;
+          --notice-bg: linear-gradient(90deg,#6366f1 0%,#06b6d4 100%);
+          --delete-bg: #fff;
+          --delete-color: #ef4444;
+        }
+        body.dark {
+          --bg-gradient: linear-gradient(135deg, #232946 0%, #181824 100%);
+          --hero-bg: #232946;
+          --text-main: #e0e7ff;
+          --border-main: #6366f1;
+          --primary: #6366f1;
+          --primary2: #06b6d4;
+          --shadow: 0 6px 32px 0 rgba(80,80,120,0.18);
+          --img-bg: #181824;
+          --notice-bg: linear-gradient(90deg,#6366f1 0%,#06b6d4 100%);
+          --delete-bg: #232946;
+          --delete-color: #f87171;
+        }
+        body {
+          font-family: 'Inter', Arial, sans-serif;
+          margin: 0;
+          min-height: 100vh;
+          background: var(--bg-gradient);
+          transition: background 0.3s;
+        }
+        .hero {
+          width: 100%;
+          min-height: 320px;
+          background: var(--hero-bg);
+          border: 2.5px dashed var(--border-main);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          margin: 32px auto 32px auto;
+          font-size: 1.2rem;
+          color: var(--text-main);
+          cursor: pointer;
+          transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
+          border-radius: 24px;
+          box-shadow: var(--shadow);
+          max-width: 600px;
+          position: relative;
+        }
+        .hero.dragover {
+          border-color: #6366f1;
+          color: #6366f1;
+          box-shadow: 0 8px 32px 0 rgba(99,102,241,0.12);
+        }
+        .hero-icon {
+          font-size: 3.5rem;
+          margin-bottom: 12px;
+          color: #b6b6d6;
+          transition: color 0.2s;
+          user-select: none;
+          pointer-events: none;
+        }
+        .hero.dragover .hero-icon {
+          color: #6366f1;
+        }
+        .hero-text {
+          margin-bottom: 18px;
+          font-size: 1.18rem;
+          font-weight: 500;
+          letter-spacing: 0.01em;
+        }
+        .upload-btn {
+          background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 10px 28px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, transform 0.1s;
+          margin-bottom: 8px;
+        }
+        .upload-btn:hover {
+          background: linear-gradient(90deg, #6366f1 0%, #2563eb 100%);
+          transform: translateY(-2px) scale(1.04);
+        }
+        .library-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 16px;
+          padding: 0 24px 32px 24px;
+          justify-content: flex-start;
+          margin: 0 auto;
+        }
+        .library-img {
+          height: 150px;
+          aspect-ratio: 1/1;
+          object-fit: cover;
+          border-radius: 12px;
+          box-shadow: 0 2px 12px rgba(80,80,120,0.10);
+          cursor: pointer;
+          transition: box-shadow 0.2s, transform 0.1s, border-color 0.2s;
+          border: 2.5px solid transparent;
+          background: var(--img-bg);
+          position: relative;
+          z-index: 1;
+          user-select: none;
+        }
+        .library-img.dragging {
+          opacity: 0.4;
+          z-index: 10;
+        }
+        .img-actions {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          display: flex;
+          gap: 6px;
+          z-index: 2;
+        }
+        .img-btn {
+          background: var(--delete-bg);
+          border: none;
+          color: var(--delete-color);
+          font-size: 1.1rem;
+          border-radius: 50%;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+          opacity: 0.85;
+          transition: background 0.2s, color 0.2s, opacity 0.2s;
+        }
+        .img-btn:hover {
+          background: #fee2e2;
+          color: #b91c1c;
+          opacity: 1;
+        }
+        .img-btn:active {
+          background: #fecaca;
+        }
+        .img-btn.preview {
+          color: var(--primary);
+          background: var(--delete-bg);
+        }
+        .img-btn.preview:hover {
+          background: #e0e7ff;
+          color: #2563eb;
+        }
+        .dark-toggle {
+          position: fixed;
+          top: 18px;
+          right: 24px;
+          z-index: 1200;
+          background: var(--hero-bg);
+          color: var(--primary);
+          border: 2px solid var(--primary);
+          border-radius: 50%;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, color 0.2s;
+        }
+        .dark-toggle:hover {
+          background: var(--primary);
+          color: #fff;
+        }
+        .modal {
+          display: none;
+          position: fixed;
+          z-index: 2000;
+          left: 0; top: 0; width: 100vw; height: 100vh;
+          background: rgba(30,41,59,0.65);
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+        }
+        .modal.open {
+          display: flex;
+        }
+        .modal-content {
+          background: var(--hero-bg);
+          border-radius: 18px;
+          box-shadow: 0 8px 32px rgba(80,80,120,0.18);
+          padding: 32px 24px 24px 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          max-width: 90vw;
+          max-height: 90vh;
+          position: relative;
+        }
+        .modal-img {
+          max-width: 70vw;
+          max-height: 60vh;
+          border-radius: 12px;
+          box-shadow: 0 2px 12px rgba(80,80,120,0.13);
+          margin-bottom: 18px;
+          background: var(--img-bg);
+        }
+        .modal-close {
+          position: absolute;
+          top: 12px;
+          right: 18px;
+          font-size: 1.5rem;
+          color: var(--primary);
+          background: none;
+          border: none;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+        .modal-close:hover {
+          color: #ef4444;
+        }
+        .library-img:hover {
+          box-shadow: 0 4px 20px rgba(99,102,241,0.13);
+          border-color: #6366f1;
+          transform: scale(1.04);
+        }
+        .library-img:active {
+          transform: scale(0.97);
+          border-color: #06b6d4;
+        }
+        .copied {
+          outline: 3px solid #06b6d4 !important;
+          outline-offset: 2px !important;
+          box-shadow: 0 0 0 4px #a7f3d0 !important;
+          z-index: 20 !important;
+        }
+        @media (max-width: 700px) {
+          .hero {
+            min-height: 200px;
+            margin: 16px 8px 24px 8px;
+            max-width: 98vw;
+          }
+          .library-row {
+            gap: 10px;
+            padding: 0 6vw 24px 6vw;
+          }
+          .library-img {
+            height: 60px;
+            border-radius: 8px;
+          }
+        }
+        .deleteall-toggle {
+          background: var(--hero-bg);
+          color: var(--primary);
+          border: 2px solid var(--primary);
+          border-radius: 50%;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, color 0.2s;
+          margin-left: 0;
+        }
+        .deleteall-toggle:hover {
+          background: var(--primary);
+          color: #fff;
+        }
+        .deleteall-toggle:active {
+          background: #ef4444;
+          color: #fff;
+        }
+        .regen-toggle {
+          background: var(--hero-bg);
+          color: var(--primary);
+          border: 2px solid var(--primary);
+          border-radius: 50%;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, color 0.2s;
+          margin-left: 0;
+        }
+        .regen-toggle:hover {
+          background: var(--primary);
+          color: #fff;
+        }
+        .regen-toggle:active {
+          background: #06b6d4;
+          color: #fff;
+        }
+        .regen-icon {
+          font-size: 1.5rem;
+          line-height: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .home-toggle {
+          background: var(--hero-bg);
+          color: var(--primary);
+          border: 2px solid var(--primary);
+          border-radius: 50%;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, color 0.2s;
+          margin-left: 0;
+          text-decoration: none;
+        }
+        .home-toggle:hover {
+          background: var(--primary);
+          color: #fff;
+        }
+        .manage-toggle {
+          background: var(--hero-bg);
+          color: var(--primary);
+          border: 2px solid var(--primary);
+          border-radius: 50%;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, color 0.2s;
+          margin-left: 0;
+        }
+        .manage-toggle:hover {
+          background: var(--primary);
+          color: #fff;
+        }
+        .copy-inline {
+          background: var(--hero-bg);
+          color: var(--primary);
+          border: 2px solid var(--primary);
+          border-radius: 50%;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.1rem;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, color 0.2s;
+          margin-left: 0;
+        }
+        .copy-inline:hover {
+          background: var(--primary);
+          color: #fff;
+        }
+        .copy-icon {
+          font-size: 1.1rem;
+        }
+        .manage-modal-content, .manage-modal-title, .manage-modal-desc {
+          color: #232946;
+        }
+        body.dark .manage-modal-content, body.dark .manage-modal-title, body.dark .manage-modal-desc {
+          color: #e0e7ff;
+        }
+        .gallery-header {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 0.5rem;
+          padding: 0.75rem 1.5rem 0.5rem 1.5rem;
+          background: var(--hero-bg);
+          border-bottom: 1.5px solid var(--border-main);
+          box-shadow: 0 2px 8px rgba(80,80,120,0.04);
+          position: sticky;
+          top: 0;
+          z-index: 100;
+        }
+        .header-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--hero-bg);
+          color: var(--primary);
+          border: 2px solid var(--primary);
+          border-radius: 50%;
+          width: 38px;
+          height: 38px;
+          font-size: 1.2rem;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, color 0.2s, border 0.2s;
+          margin-left: 0.15rem;
+          padding: 0;
+        }
+        .header-btn:hover {
+          background: var(--primary);
+          color: #fff;
+          border-color: var(--primary2);
+        }
+        .gallery-header-bar {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          margin: 32px 0 0 0;
+          font-size: 1.08rem;
+          letter-spacing: 0.01em;
+          opacity: 0.85;
+          user-select: none;
+        }
+        .gallery-header-label {
+          color: var(--text-main);
+          font-weight: 500;
+        }
+        .gallery-header-code {
+          font-family: monospace;
+          color: var(--primary);
+          font-size: 1.18rem;
+          margin: 0 0.25rem;
+          padding: 2px 8px;
+          border-radius: 6px;
+          background: var(--img-bg);
+        }
+        .gallery-header-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--hero-bg);
+          color: var(--primary);
+          border: 2px solid var(--primary);
+          border-radius: 50%;
+          width: 32px;
+          height: 32px;
+          font-size: 1.1rem;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+          transition: background 0.2s, color 0.2s, border 0.2s;
+          margin-left: 0.15rem;
+          padding: 0;
+        }
+        .gallery-header-icon:hover {
+          background: var(--primary);
+          color: #fff;
+          border-color: var(--primary2);
+        }
+        .copy-icon, .regen-icon {
+          font-size: 1.1rem;
+        }
+      `}</style>
+    </>
+  );
+}

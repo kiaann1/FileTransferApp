@@ -1,0 +1,25 @@
+// Prisma schema for collaborative image library
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Gallery {
+  code        String   @id
+  passwordHash String?
+  createdAt   DateTime @default(now())
+  images      Image[]
+}
+
+model Image {
+  id        Int      @id @default(autoincrement())
+  code      String
+  filename  String
+  createdAt DateTime @default(now())
+  gallery   Gallery  @relation(fields: [code], references: [code])
+}
