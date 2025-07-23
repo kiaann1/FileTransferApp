@@ -94,7 +94,7 @@ export default function GalleryPage() {
     };
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
-  }, []);
+  }, [uploadImage]);
 
   // Browse
   const onBrowse = () => fileInputRef.current?.click();
@@ -298,7 +298,7 @@ export default function GalleryPage() {
   );
 
   // Helper to get file icon (always generic)
-  function getFileIcon(filename: string) {
+  function getFileIcon(_filename: string) {
     return "/file.svg";
   }
 
