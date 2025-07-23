@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // POST /api/gallery/[code]/images/move
-export async function POST(req: NextRequest, { params }: { params: { code: string } }) {
+export async function POST(req: NextRequest) {
+  const code = req.nextUrl.pathname.split("/")[4]; // or use URLPattern if needed
   try {
-    const { code } = params;
     const { newCode } = await req.json();
     // Move all images to new gallery code
     await prisma.image.updateMany({
