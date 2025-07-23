@@ -19,7 +19,7 @@ export default function GalleryPage() {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
+  // const [error, setError] = useState("");
   const [dark, setDark] = useState(false);
   const [modalImg, setModalImg] = useState<string | null>(null);
   const [modalMeta, setModalMeta] = useState<string>("");
@@ -34,14 +34,14 @@ export default function GalleryPage() {
     fetch(`/api/gallery/${code}/images`)
       .then((res) => res.json())
       .then(setImages)
-      .catch(() => setError("Failed to load images."))
+      .catch(() => {/* error handling removed */})
       .finally(() => setLoading(false));
   }, [code]);
 
   // Upload handler
   const uploadImage = async (file: File) => {
     setUploading(true);
-    setError("");
+    // error state removed
     const formData = new FormData();
     formData.append("file", file);
     const res = await fetch(`/api/gallery/${code}/images`, {
@@ -52,7 +52,7 @@ export default function GalleryPage() {
       const img = await res.json();
       setImages((prev) => [img, ...prev]);
     } else {
-      setError("Upload failed.");
+      // error state removed
     }
     setUploading(false);
   };
