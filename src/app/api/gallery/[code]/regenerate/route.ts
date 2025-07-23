@@ -14,8 +14,7 @@ const generateUniqueCode: GenerateCodeFn = async () => {
 };
 
 // POST /api/gallery/[code]/regenerate: generate a new code for a gallery
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function POST(req: NextRequest, context: any) {
+export async function POST(req: NextRequest, context: { params: { code: string } }) {
   try {
     const { code } = context.params;
     // Find the gallery
@@ -28,7 +27,10 @@ export async function POST(req: NextRequest, context: any) {
     // Update the gallery code
     await prisma.gallery.update({ where: { code }, data: { code: newCode } });
     return NextResponse.json({ success: true, newCode });
-  } catch (error: any) {
-    return NextResponse.json({ error: error?.message || 'Unknown error' }, { status: 500 });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }

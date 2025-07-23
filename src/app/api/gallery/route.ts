@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import { cookies } from 'next/headers';
+// ...existing code...
 
 // Helper to generate a unique 6-digit code
 async function generateUniqueCode() {

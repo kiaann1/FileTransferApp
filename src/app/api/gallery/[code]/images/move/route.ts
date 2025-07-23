@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // POST /api/gallery/[code]/images/move
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function POST(req: NextRequest, context: any) {
+export async function POST(req: NextRequest, context: { params: { code: string } }) {
   try {
     const { code } = context.params;
     const { newCode } = await req.json();

@@ -6,8 +6,7 @@ import fs from 'fs/promises';
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 // GET /api/gallery/[code]/images: fetch all images for a gallery
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function GET(req: NextRequest, context: any) {
+export async function GET(req: NextRequest, context: { params: { code: string } }) {
   try {
     const { code } = context.params;
     const images = await prisma.image.findMany({
@@ -15,14 +14,16 @@ export async function GET(req: NextRequest, context: any) {
       orderBy: { createdAt: 'desc' },
     });
     return NextResponse.json(images);
-  } catch (error: any) {
-    return NextResponse.json({ error: error?.message || 'Unknown error' }, { status: 500 });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }
 
 // POST /api/gallery/[code]/images: upload a file (image or any file type)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function POST(req: NextRequest, context: any) {
+export async function POST(req: NextRequest, context: { params: { code: string } }) {
   try {
     const { code } = context.params;
     const formData = await req.formData();
@@ -41,7 +42,10 @@ export async function POST(req: NextRequest, context: any) {
       data: { code, filename },
     });
     return NextResponse.json(uploadedFile);
-  } catch (error: any) {
-    return NextResponse.json({ error: error?.message || 'Unknown error' }, { status: 500 });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }
