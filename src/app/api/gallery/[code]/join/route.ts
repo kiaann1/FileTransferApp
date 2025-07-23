@@ -10,22 +10,25 @@ export async function POST(req: NextRequest, context: any) {
   const userId = cookieStore.get('session_user_id')?.value;
   const { code } = context.params;
   const { password } = await req.json();
-  if (!userId) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   const gallery = await prisma.gallery.findUnique({ where: { code }, select: { passwordHash: true } });
   if (!gallery) return NextResponse.json({ error: 'Gallery not found' }, { status: 404 });
-  // If gallery has a password, require and check it; if not, allow join without password
   if (gallery.passwordHash) {
+    // Password-protected: require authentication
+    if (!userId) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     if (!password) return NextResponse.json({ error: 'Password required' }, { status: 400 });
     const valid = await bcrypt.compare(password, gallery.passwordHash);
     if (!valid) return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+    // Assign viewer role to joiner
+    await prisma.galleryRole.create({
+      data: {
+        galleryCode: code,
+        userId,
+        role: 'viewer',
+      },
+    });
+    return NextResponse.json({ success: true, role: 'viewer' });
+  } else {
+    // No password: allow anonymous join (no userId required)
+    return NextResponse.json({ success: true, role: 'viewer' });
   }
-  // Assign viewer role to joiner
-  await prisma.galleryRole.create({
-    data: {
-      galleryCode: code,
-      userId,
-      role: 'viewer',
-    },
-  });
-  return NextResponse.json({ success: true, role: 'viewer' });
 }
