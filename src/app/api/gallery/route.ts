@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+// import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 // ...existing code...
 
 // Helper to generate a unique 6-digit code
 async function generateUniqueCode() {
   let code: string = '000000';
-  let exists = true;
-  while (exists) {
-    code = Math.floor(100000 + Math.random() * 900000).toString();
-    exists = !!(await prisma.gallery.findUnique({ where: { code } }));
-  }
+  // TODO: Check for code uniqueness in local storage
+  code = Math.floor(100000 + Math.random() * 900000).toString();
+  // For now, assume always unique
   return code;
 }
 
@@ -26,14 +24,15 @@ export async function POST(req: NextRequest) {
     passwordHash = await bcrypt.hash(password, 10);
   }
   // If password is empty string or not provided, passwordHash remains null (no password)
-  const gallery = await prisma.gallery.create({ data: { code, passwordHash } });
-  return NextResponse.json({ code, createdAt: gallery.createdAt });
+  // TODO: Save gallery to local storage
+  const createdAt = new Date().toISOString();
+  // Save to local storage (to be implemented)
+  return NextResponse.json({ code, createdAt });
 }
 
 // GET /api/gallery: list all galleries
 export async function GET() {
-  const galleries = await prisma.gallery.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  // TODO: Fetch galleries from local storage
+  const galleries = [];
   return NextResponse.json(galleries);
 }

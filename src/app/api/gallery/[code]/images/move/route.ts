@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+// import { prisma } from '@/lib/prisma';
 
 // POST /api/gallery/[code]/images/move
 export async function POST(req: NextRequest) {
@@ -7,10 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const { newCode } = await req.json();
     // Move all images to new gallery code
-    await prisma.image.updateMany({
-      where: { code },
-      data: { code: newCode },
-    });
+    // TODO: Move all images to new gallery code in local storage
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     let message = 'Unknown error';

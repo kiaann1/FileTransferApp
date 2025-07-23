@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+// import { prisma } from '@/lib/prisma';
 
 // Helper to generate a unique 6-digit code
 type GenerateCodeFn = () => Promise<string>;
 const generateUniqueCode: GenerateCodeFn = async () => {
   let code: string = '000000';
-  let exists = true;
-  while (exists) {
-    code = Math.floor(100000 + Math.random() * 900000).toString();
-    exists = !!(await prisma.gallery.findUnique({ where: { code } }));
-  }
+  // TODO: Check for code uniqueness in local storage
+  code = Math.floor(100000 + Math.random() * 900000).toString();
+  // For now, assume always unique
   return code;
 };
 
@@ -20,14 +18,9 @@ export async function POST(req: NextRequest) {
     // /api/gallery/[code]/regenerate => ['', 'api', 'gallery', '{code}', 'regenerate']
     const code = segments[3];
     // Find the gallery
-    const gallery = await prisma.gallery.findUnique({ where: { code } });
-    if (!gallery) {
-      return NextResponse.json({ error: 'Gallery not found' }, { status: 404 });
-    }
-    // Generate a new unique code
-    const newCode = await generateUniqueCode();
-    // Update the gallery code
-    await prisma.gallery.update({ where: { code }, data: { code: newCode } });
+    // TODO: Fetch gallery from local storage, generate new code, and update
+    // For now, just return a new code
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
     return NextResponse.json({ success: true, newCode });
   } catch (error: unknown) {
     if (error instanceof Error) {
