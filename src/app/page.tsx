@@ -8,8 +8,7 @@ export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [galleries, setGalleries] = useState<{ code: string; createdAt: string }[]>([]);
-  const [fetching, setFetching] = useState(true);
+  // Removed public gallery list for privacy
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -17,18 +16,7 @@ export default function Home() {
     else document.body.classList.remove("dark");
   }, [dark]);
 
-  useEffect(() => {
-    // Default to light mode on mount, but don't override user toggling
-    if (typeof window !== 'undefined') {
-      document.body.classList.remove('dark');
-    }
-    setFetching(true);
-    fetch("/api/gallery")
-      .then((res) => res.json())
-      .then(setGalleries)
-      .catch(() => setError("Failed to fetch galleries."))
-      .finally(() => setFetching(false));
-  }, []);
+  // Removed fetching of all galleries for privacy
 
   // SVG ICON
   const DarkIcon = ({dark}:{dark:boolean}) => dark
@@ -36,21 +24,39 @@ export default function Home() {
     : (<svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" /></svg>);
 
   const handleCreate = async () => {
-    const { value: password } = await Swal.fire({
-      title: 'Set a password for your gallery (optional)',
-      input: 'password',
-      inputLabel: 'Password (optional, min 4 chars if set)',
-      inputPlaceholder: 'Leave blank for no password',
-      inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+    let requirePassword = false;
+    let password = "";
+    const { value: toggle } = await Swal.fire({
+      title: 'Require a password for your gallery?',
+      input: 'checkbox',
+      inputValue: 0,
+      inputPlaceholder: 'Require password',
+      confirmButtonText: 'Next',
       showCancelButton: true,
-      confirmButtonText: 'Create',
       background: document.body.classList.contains('dark') ? '#232946' : '#fff',
       color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
-      inputValidator: (value) => {
-        if (value && value.length > 0 && value.length < 4) return 'Password must be at least 4 characters';
-      }
+      inputValidator: () => {}
     });
-    if (password === undefined) return;
+    if (toggle === undefined) return;
+    requirePassword = !!toggle;
+    if (requirePassword) {
+      const { value: pw } = await Swal.fire({
+        title: 'Set a password for your gallery',
+        input: 'password',
+        inputLabel: 'Password (min 4 chars)',
+        inputPlaceholder: 'Enter password',
+        inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+        showCancelButton: true,
+        confirmButtonText: 'Create',
+        background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+        color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+        inputValidator: (value) => {
+          if (!value || value.length < 4) return 'Password must be at least 4 characters';
+        }
+      });
+      if (pw === undefined) return;
+      password = pw;
+    }
     setLoading(true);
     setError("");
     try {
@@ -72,52 +78,9 @@ export default function Home() {
     }
   };
 
-  // Delete gallery handler
-  const handleDeleteGallery = async (code: string) => {
-    const result = await Swal.fire({
-      title: 'Delete this gallery?',
-      html: 'This will <b>permanently delete</b> the gallery, all images, and all users with this code.<br><br>Type <b>DELETE</b> to confirm.',
-      input: 'text',
-      inputPlaceholder: 'Type DELETE',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Delete',
-      background: document.body.classList.contains('dark') ? '#232946' : '#fff',
-      color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
-      preConfirm: (input) => {
-        if (input !== 'DELETE') {
-          Swal.showValidationMessage('You must type DELETE to confirm.');
-        }
-        return input;
-      }
-    });
-    if (result.isConfirmed && result.value === 'DELETE') {
-      const res = await fetch(`/api/gallery/${code}`, { method: 'DELETE' });
-      if (res.ok) {
-        setGalleries(galleries => galleries.filter(g => g.code !== code));
-        await Swal.fire({
-          title: 'Deleted!',
-          text: 'The gallery and all its data have been deleted.',
-          icon: 'success',
-          timer: 1400,
-          showConfirmButton: false,
-          background: document.body.classList.contains('dark') ? '#232946' : '#fff',
-          color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
-        });
-      } else {
-        await Swal.fire({
-          title: 'Error',
-          text: 'Failed to delete gallery.',
-          icon: 'error',
-          background: document.body.classList.contains('dark') ? '#232946' : '#fff',
-          color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
-        });
-      }
-    }
-  };
+  // Delete gallery handler removed (no public gallery list)
 
-  // Join with gallery code and password
+  // Join with gallery code, only prompt for password if required
   const handleJoin = async () => {
     const { value: code } = await Swal.fire({
       title: 'Join Gallery',
@@ -133,20 +96,51 @@ export default function Home() {
       }
     });
     if (!code) return;
-    const { value: password } = await Swal.fire({
-      title: 'Enter Gallery Password',
-      input: 'password',
-      inputLabel: 'Password',
-      inputPlaceholder: 'Enter the gallery password',
-      showCancelButton: true,
-      confirmButtonText: 'Join',
-      background: document.body.classList.contains('dark') ? '#232946' : '#fff',
-      color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
-      inputValidator: (value) => {
-        if (!value) return 'Password required';
+    // Check if gallery requires a password
+    let requiresPassword = false;
+    try {
+      const res = await fetch(`/api/gallery/${code}`);
+      if (res.ok) {
+        const data = await res.json();
+        requiresPassword = !!data.requiresPassword;
+      } else {
+        await Swal.fire({
+          title: 'Not found',
+          text: 'Gallery not found.',
+          icon: 'error',
+          background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+          color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+        });
+        return;
       }
-    });
-    if (!password) return;
+    } catch {
+      await Swal.fire({
+        title: 'Error',
+        text: 'Failed to check gallery.',
+        icon: 'error',
+        background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+        color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+      });
+      return;
+    }
+    let password = "";
+    if (requiresPassword) {
+      const { value: pw } = await Swal.fire({
+        title: 'Enter Gallery Password',
+        input: 'password',
+        inputLabel: 'Password',
+        inputPlaceholder: 'Enter the gallery password',
+        showCancelButton: true,
+        confirmButtonText: 'Join',
+        background: document.body.classList.contains('dark') ? '#232946' : '#fff',
+        color: document.body.classList.contains('dark') ? '#e0e7ff' : '#232946',
+        inputValidator: (value) => {
+          if (!value) return 'Password required';
+        }
+      });
+      if (!pw) return;
+      password = pw;
+    }
     const res = await fetch(`/api/gallery/${code}/join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -200,36 +194,7 @@ export default function Home() {
         {error && (
           <div className="text-red-500 text-sm mt-2">{error}</div>
         )}
-        <div className="w-full mt-6">
-          <h2 className="text-lg font-semibold mb-2 text-zinc-900">Existing Galleries</h2>
-          {fetching ? (
-            <div className="text-zinc-400 text-sm">Loading galleries...</div>
-          ) : galleries.length === 0 ? (
-            <div className="text-zinc-400 text-sm">No galleries found.</div>
-          ) : (
-            <ul className="space-y-2">
-              {galleries.map((g) => (
-                <li key={g.code} className="flex items-center justify-between bg-zinc-100 rounded px-3 py-2">
-                  <span className="font-mono text-indigo-600">{g.code}</span>
-                  <div className="flex gap-2">
-                    <button
-                      className="text-sm bg-indigo-500 hover:bg-indigo-600 text-white rounded px-3 py-1"
-                      onClick={() => router.push(`/gallery/${g.code}`)}
-                    >
-                      Open
-                    </button>
-                    <button
-                      className="text-sm bg-red-500 hover:bg-red-600 text-white rounded px-3 py-1"
-                      onClick={() => handleDeleteGallery(g.code)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {/* Gallery list removed for privacy. Only show create/join options. */}
       </div>
       <footer className="mt-10 text-zinc-400 text-xs">
         &copy; {new Date().getFullYear()} Collaborative Image Library

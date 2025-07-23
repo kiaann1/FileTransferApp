@@ -400,7 +400,7 @@ export default function GalleryPage() {
               >
                 {isImage ? (
                   <Image
-                    src={`/uploads/${img.filename}`}
+                    src={img.filename}
                     className="library-img enhanced-thumb"
                     title={img.filename}
                     alt={img.filename}
@@ -415,7 +415,7 @@ export default function GalleryPage() {
                   <div className="library-file-box enhanced-file-box">
                     <Image src={getFileIcon()} alt="File icon" className="enhanced-file-icon" width={38} height={38} />
                     <div className="enhanced-file-name" title={img.filename}>{img.filename}</div>
-                    <a href={`/uploads/${img.filename}`} download className="file-download-btn enhanced-download-btn">
+                    <a href={img.filename} download className="file-download-btn enhanced-download-btn">
                       <Image src="/download.svg" alt="Download" className="enhanced-download-icon" width={16} height={16} /> Download
                     </a>
                   </div>
@@ -440,6 +440,10 @@ export default function GalleryPage() {
               View
             </li>
             <li className="context-menu-item" onClick={() => { window.open(`/uploads/${contextMenu.img!.filename}`,'_blank'); setContextMenu(c => ({...c, visible: false})); }}>
+              <span className="context-menu-icon"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#6366f1" strokeWidth="2"><path d="M12 5v12m0 0l-4-4m4 4l4-4" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><rect x="4" y="17" width="16" height="2" rx="1" fill="#6366f1"/></svg></span>
+              Download
+            </li>
+            <li className="context-menu-item" onClick={() => { window.open(contextMenu.img!.filename,'_blank'); setContextMenu(c => ({...c, visible: false})); }}>
               <span className="context-menu-icon"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#6366f1" strokeWidth="2"><path d="M12 5v12m0 0l-4-4m4 4l4-4" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><rect x="4" y="17" width="16" height="2" rx="1" fill="#6366f1"/></svg></span>
               Download
             </li>

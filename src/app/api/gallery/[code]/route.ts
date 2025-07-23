@@ -1,3 +1,11 @@
+// GET /api/gallery/[code]: return if gallery requires a password
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function GET(req: NextRequest, context: any) {
+  const { code } = context.params;
+  const gallery = await prisma.gallery.findUnique({ where: { code }, select: { passwordHash: true } });
+  if (!gallery) return NextResponse.json({ error: 'Gallery not found' }, { status: 404 });
+  return NextResponse.json({ requiresPassword: !!gallery.passwordHash });
+}
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
