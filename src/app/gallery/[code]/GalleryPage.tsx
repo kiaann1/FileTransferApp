@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
@@ -39,9 +40,8 @@ export default function GalleryPage() {
   }, [code]);
 
   // Upload handler
-  const uploadImage = async (file: File) => {
+  const uploadImage = useCallback(async (file: File) => {
     setUploading(true);
-    // error state removed
     const formData = new FormData();
     formData.append("file", file);
     const res = await fetch(`/api/gallery/${code}/images`, {
@@ -51,11 +51,9 @@ export default function GalleryPage() {
     if (res.ok) {
       const img = await res.json();
       setImages((prev) => [img, ...prev]);
-    } else {
-      // error state removed
     }
     setUploading(false);
-  };
+  }, [code]);
 
   // Drag & drop
   const onDrop = (e: React.DragEvent) => {
@@ -220,8 +218,9 @@ export default function GalleryPage() {
     if (!notice) return;
     notice.style.display = 'block';
     notice.style.opacity = '1';
-    clearTimeout((window as any)._copyNoticeTimeout);
-    (window as any)._copyNoticeTimeout = setTimeout(() => {
+    const win = window as Window & { _copyNoticeTimeout?: number };
+    clearTimeout(win._copyNoticeTimeout);
+    win._copyNoticeTimeout = window.setTimeout(() => {
       notice.style.opacity = '0';
       setTimeout(() => { notice.style.display = 'none'; }, 300);
     }, 1100);
@@ -298,7 +297,7 @@ export default function GalleryPage() {
   );
 
   // Helper to get file icon (always generic)
-  function getFileIcon(_filename: string) {
+  function getFileIcon(filename: string) {
     return "/file.svg";
   }
 
@@ -352,7 +351,7 @@ export default function GalleryPage() {
         <div className="modal-content">
           <button className="modal-close" onClick={closeModal} title="Close">✕</button>
           {modalImg && (/\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(modalImg) ? (
-            <img className="modal-img" src={modalImg} alt="Preview" />
+            <Image src="/download.svg" alt="Download" width={18} height={18} style={{verticalAlign:'middle'}} />
           ) : (
             <div style={{fontSize:'2.5rem',margin:'32px 0'}}>📄</div>
           ))}
@@ -400,11 +399,14 @@ export default function GalleryPage() {
                 }}
               >
                 {isImage ? (
-                  <img
+                  <Image
                     src={`/uploads/${img.filename}`}
                     className="library-img enhanced-thumb"
                     title={img.filename}
+                    alt={img.filename}
                     style={{userSelect:'none'}}
+                    width={140}
+                    height={140}
                     onClick={() => copyImage(img.filename)}
                     onDoubleClick={() => openModal(img.filename)}
                     draggable={false}
