@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     }
     passwordHash = await bcrypt.hash(password, 10);
   }
+  // If password is empty string or not provided, passwordHash remains null (no password)
   const gallery = await prisma.gallery.create({ data: { code, passwordHash } });
   return NextResponse.json({ code, createdAt: gallery.createdAt });
 }

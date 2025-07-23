@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import path from 'path';
-import fs from 'fs/promises';
-
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+import { put } from '@vercel/blob';
 
 // GET /api/gallery/[code]/images: fetch all images for a gallery
 export async function GET(req: NextRequest) {
@@ -34,16 +31,12 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File;
     if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const ext = path.extname(file.name) || '';
-    const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
-    const filepath = path.join(UPLOAD_DIR, filename);
-    await fs.writeFile(filepath, buffer);
+    // Upload to Vercel Blob
+    const blob = await put(file.name, file, { access: 'public' });
 
-    // Save file metadata (not just images)
+    // Save file metadata (URL) in the database
     const uploadedFile = await prisma.image.create({
-      data: { code, filename },
+      data: { code, filename: blob.url },
     });
     return NextResponse.json(uploadedFile);
   } catch (error: unknown) {

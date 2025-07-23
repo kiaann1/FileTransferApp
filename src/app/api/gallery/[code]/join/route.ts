@@ -11,11 +11,14 @@ export async function POST(req: NextRequest, context: any) {
   const { code } = context.params;
   const { password } = await req.json();
   if (!userId) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-  if (!password) return NextResponse.json({ error: 'Password required' }, { status: 400 });
   const gallery = await prisma.gallery.findUnique({ where: { code }, select: { passwordHash: true } });
-  if (!gallery || !gallery.passwordHash) return NextResponse.json({ error: 'Gallery not found' }, { status: 404 });
-  const valid = await bcrypt.compare(password, gallery.passwordHash);
-  if (!valid) return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+  if (!gallery) return NextResponse.json({ error: 'Gallery not found' }, { status: 404 });
+  // If gallery has a password, require and check it; if not, allow join without password
+  if (gallery.passwordHash) {
+    if (!password) return NextResponse.json({ error: 'Password required' }, { status: 400 });
+    const valid = await bcrypt.compare(password, gallery.passwordHash);
+    if (!valid) return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+  }
   // Assign viewer role to joiner
   await prisma.galleryRole.create({
     data: {
