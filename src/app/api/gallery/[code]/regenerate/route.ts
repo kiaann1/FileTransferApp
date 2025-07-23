@@ -14,9 +14,11 @@ const generateUniqueCode: GenerateCodeFn = async () => {
 };
 
 // POST /api/gallery/[code]/regenerate: generate a new code for a gallery
-export async function POST(req: NextRequest, context: { params: { code: string } }) {
+export async function POST(req: NextRequest) {
   try {
-    const { code } = context.params;
+    const segments = req.nextUrl.pathname.split("/");
+    // /api/gallery/[code]/regenerate => ['', 'api', 'gallery', '{code}', 'regenerate']
+    const code = segments[3];
     // Find the gallery
     const gallery = await prisma.gallery.findUnique({ where: { code } });
     if (!gallery) {
