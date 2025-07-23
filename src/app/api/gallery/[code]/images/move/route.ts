@@ -14,8 +14,13 @@ export async function POST(req: NextRequest, context: { params: { code: string }
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     let message = 'Unknown error';
-    if (error && typeof error === 'object' && 'message' in error && typeof (error as any).message === 'string') {
-      message = (error as any).message;
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof (error as { message?: unknown }).message === 'string'
+    ) {
+      message = (error as { message: string }).message;
     }
     return NextResponse.json({ error: message }, { status: 500 });
   }

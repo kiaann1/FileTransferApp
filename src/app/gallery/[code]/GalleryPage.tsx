@@ -297,7 +297,7 @@ export default function GalleryPage() {
   );
 
   // Helper to get file icon (always generic)
-  function getFileIcon(filename: string) {
+  function getFileIcon() {
     return "/file.svg";
   }
 
@@ -359,7 +359,7 @@ export default function GalleryPage() {
           {modalImg && (/\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(modalImg)) && (
             <div style={{display:'flex',justifyContent:'center',gap:16,marginTop:12}}>
               <a href={modalImg} download className="file-download-btn" style={{fontSize:'1.05rem',color:'#6366f1',textDecoration:'underline',display:'flex',alignItems:'center',gap:4}}>
-                <img src="/download.svg" alt="Download" style={{width:18,height:18,verticalAlign:'middle'}} />
+                <Image src="/download.svg" alt="Download" width={18} height={18} style={{verticalAlign:'middle'}} />
               </a>
               <button className="file-download-btn" style={{fontSize:'1.05rem',color:'#6366f1',background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:4}} onClick={()=>copyImage(modalImg.replace('/uploads/',''))}>
                 📋
@@ -413,10 +413,10 @@ export default function GalleryPage() {
                   />
                 ) : (
                   <div className="library-file-box enhanced-file-box">
-                    <img src={getFileIcon(img.filename)} alt="File icon" className="enhanced-file-icon" />
+                    <Image src={getFileIcon()} alt="File icon" className="enhanced-file-icon" width={38} height={38} />
                     <div className="enhanced-file-name" title={img.filename}>{img.filename}</div>
                     <a href={`/uploads/${img.filename}`} download className="file-download-btn enhanced-download-btn">
-                      <img src="/download.svg" alt="Download" className="enhanced-download-icon" /> Download
+                      <Image src="/download.svg" alt="Download" className="enhanced-download-icon" width={16} height={16} /> Download
                     </a>
                   </div>
                 )}
