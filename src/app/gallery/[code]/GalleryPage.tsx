@@ -12,6 +12,8 @@ interface ImageItem {
 }
 
 export default function GalleryPage() {
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{visible: boolean, x: number, y: number, img: ImageItem | null}>({visible: false, x: 0, y: 0, img: null});
   const { code } = useParams<{ code: string }>();
   const router = useRouter();
   const [images, setImages] = useState<ImageItem[]>([]);
@@ -378,53 +380,326 @@ export default function GalleryPage() {
           </div>
         </div>
       )}
-      <div className="library-row" id="library">
+      <div className="library-row enhanced-gallery" id="library" onClick={() => setContextMenu(c => ({...c, visible: false}))}>
         {loading ? (
-          <div style={{textAlign:'center',color:'#b6b6d6',width:'100%'}}>Loading files...</div>
+          <div className="gallery-list-empty">Loading files...</div>
         ) : images.length === 0 ? (
-          <div style={{textAlign:'center',color:'#b6b6d6',width:'100%'}}>No files yet. Upload or paste to get started!</div>
+          <div className="gallery-list-empty">No files yet. Upload or paste to get started!</div>
         ) : (
           images.map(img => {
             const isImage = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(img.filename);
             return (
-              <div key={img.id} style={{position:'relative',display:'inline-block',width:160}} className="img-wrapper">
+              <div
+                key={img.id}
+                className="img-wrapper enhanced-card"
+                title={img.filename}
+                tabIndex={0}
+                onContextMenu={e => {
+                  e.preventDefault();
+                  setContextMenu({visible: true, x: e.clientX, y: e.clientY, img});
+                }}
+              >
                 {isImage ? (
                   <img
                     src={`/uploads/${img.filename}`}
-                    className="library-img"
-                    title="Click to copy"
+                    className="library-img enhanced-thumb"
+                    title={img.filename}
                     style={{userSelect:'none'}}
                     onClick={() => copyImage(img.filename)}
                     onDoubleClick={() => openModal(img.filename)}
                     draggable={false}
                   />
                 ) : (
-                  <div className="library-file-box" style={{height:150,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',borderRadius:12,background:'var(--img-bg)',boxShadow:'0 2px 12px rgba(80,80,120,0.10)',border:'2.5px solid transparent',padding:12}}>
-                    <img src={getFileIcon(img.filename)} alt="File icon" style={{width:48,height:48,marginBottom:8,filter:'drop-shadow(0 1px 2px #bbb)'}} />
-                    <div style={{fontSize:'0.98rem',wordBreak:'break-all',textAlign:'center',color:'var(--primary)',background:'rgba(255,255,255,0.85)',borderRadius:4,padding:'2px 4px',boxShadow:'0 1px 2px #eee'}}>{img.filename}</div>
-                    <a href={`/uploads/${img.filename}`} download className="file-download-btn" style={{marginTop:8,fontSize:'0.95rem',color:'#6366f1',textDecoration:'underline',display:'flex',alignItems:'center',gap:4}}>
-                      <img src="/download.svg" alt="Download" style={{width:18,height:18,verticalAlign:'middle'}} /> Download
+                  <div className="library-file-box enhanced-file-box">
+                    <img src={getFileIcon(img.filename)} alt="File icon" className="enhanced-file-icon" />
+                    <div className="enhanced-file-name" title={img.filename}>{img.filename}</div>
+                    <a href={`/uploads/${img.filename}`} download className="file-download-btn enhanced-download-btn">
+                      <img src="/download.svg" alt="Download" className="enhanced-download-icon" /> Download
                     </a>
                   </div>
                 )}
-                <div className="img-actions">
-                  {isImage && (
-                    <>
-                      <button className="img-btn preview" title="Preview image" onClick={e => {e.stopPropagation();openModal(img.filename);}}>🔍</button>
-                      <a href={`/uploads/${img.filename}`} download className="img-btn" title="Download image" onClick={e => e.stopPropagation()} style={{background:'var(--delete-bg)',color:'var(--primary)'}}>
-                        <img src="/download.svg" alt="Download" style={{width:16,height:16,verticalAlign:'middle'}} />
-                      </a>
-                      <button className="img-btn" title="Copy image to clipboard" onClick={e => {e.stopPropagation();copyImage(img.filename);}} style={{background:'var(--delete-bg)',color:'var(--primary)'}}>📋</button>
-                    </>
-                  )}
-                  <button className="img-btn delete" title="Delete file" onClick={e => {e.stopPropagation();deleteImage(img.id);}}>🗑️</button>
-                </div>
+                {/* Removed action icons overlay */}
               </div>
             );
           })
         )}
+        {contextMenu.visible && contextMenu.img && (
+          <ul
+            className="custom-context-menu modern-context-menu"
+            style={{position:'fixed', top: contextMenu.y, left: contextMenu.x, zIndex: 4000}}
+            onClick={e => e.stopPropagation()}
+          >
+            <li className="context-menu-item" onClick={() => { copyImage(contextMenu.img!.filename); setContextMenu(c => ({...c, visible: false})); }}>
+              <span className="context-menu-icon"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" stroke="#6366f1" strokeWidth="2"/><rect x="3" y="3" width="13" height="13" rx="2" stroke="#6366f1" strokeWidth="2"/></svg></span>
+              Copy
+            </li>
+            <li className="context-menu-item" onClick={() => { openModal(contextMenu.img!.filename); setContextMenu(c => ({...c, visible: false})); }}>
+              <span className="context-menu-icon"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#6366f1" strokeWidth="2"><circle cx="12" cy="12" r="8" stroke="#6366f1" strokeWidth="2"/><path d="M12 8v4l3 2" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+              View
+            </li>
+            <li className="context-menu-item" onClick={() => { window.open(`/uploads/${contextMenu.img!.filename}`,'_blank'); setContextMenu(c => ({...c, visible: false})); }}>
+              <span className="context-menu-icon"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#6366f1" strokeWidth="2"><path d="M12 5v12m0 0l-4-4m4 4l4-4" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><rect x="4" y="17" width="16" height="2" rx="1" fill="#6366f1"/></svg></span>
+              Download
+            </li>
+            <li className="context-menu-item context-menu-delete" onClick={() => { deleteImage(contextMenu.img!.id); setContextMenu(c => ({...c, visible: false})); }}>
+              <span className="context-menu-icon"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#ef4444" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+              Delete
+            </li>
+          </ul>
+        )}
       </div>
       <style jsx global>{`
+        .custom-context-menu.modern-context-menu {
+          font-size: 1.08rem;
+          box-shadow: 0 8px 32px rgba(99,102,241,0.18);
+          background: #fff;
+          border-radius: 14px;
+          padding: 8px 0;
+          min-width: 160px;
+          border: 1.5px solid #e0e7ff;
+          filter: drop-shadow(0 2px 12px rgba(99,102,241,0.10));
+          animation: fadeInMenu 0.18s cubic-bezier(.4,1.3,.6,1) both;
+        }
+        @keyframes fadeInMenu {
+          from { opacity: 0; transform: translateY(8px) scale(0.98); }
+          to { opacity: 1; transform: none; }
+        }
+        .context-menu-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 22px 12px 18px;
+          cursor: pointer;
+          color: #6366f1;
+          font-weight: 500;
+          font-size: 1.08rem;
+          background: none;
+          border: none;
+          transition: background 0.13s, color 0.13s, padding-left 0.13s;
+          user-select: none;
+        }
+        .context-menu-item:hover {
+          background: #f3f4f6;
+          color: #232946;
+          padding-left: 26px;
+        }
+        .context-menu-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 22px;
+          height: 22px;
+        }
+        .context-menu-delete {
+          color: #ef4444 !important;
+        }
+        .context-menu-delete .context-menu-icon svg {
+          stroke: #ef4444 !important;
+        }
+        .enhanced-gallery {
+          background: linear-gradient(120deg, #f8fafc 60%, #e0e7ff 100%);
+          border-radius: 24px;
+          box-shadow: 0 8px 32px rgba(99,102,241,0.08);
+          padding: 32px 18px 32px 18px;
+          margin-top: 32px;
+        }
+        .enhanced-card {
+          background: linear-gradient(120deg, #f8fafc 60%, #e0e7ff 100%);
+          border-radius: 18px;
+          box-shadow: 0 4px 24px rgba(99,102,241,0.13);
+          padding: 18px 10px 16px 10px;
+          min-height: 220px;
+          width: 190px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+          transition: box-shadow 0.18s, transform 0.12s, border 0.18s, background 0.18s;
+          border: 2px solid #e0e7ff;
+        }
+        .enhanced-card:hover, .enhanced-card:focus {
+          box-shadow: 0 12px 36px rgba(99,102,241,0.22);
+          transform: translateY(-3px) scale(1.035);
+          border: 2px solid #6366f1;
+          outline: none;
+          background: linear-gradient(120deg, #e0e7ff 60%, #f8fafc 100%);
+        }
+        .enhanced-thumb {
+          width: 100%;
+          max-width: 140px;
+          height: 140px;
+          object-fit: cover;
+          border-radius: 14px;
+          box-shadow: 0 2px 12px rgba(99,102,241,0.10);
+          margin-bottom: 14px;
+          background: #fff;
+          border: 1px solid #e0e7ff;
+          transition: box-shadow 0.18s, border 0.18s;
+        }
+        .enhanced-thumb:hover {
+          box-shadow: 0 4px 20px rgba(99,102,241,0.18);
+          border: 1.5px solid #6366f1;
+        }
+        .enhanced-file-box {
+          width: 100%;
+          max-width: 140px;
+          height: 140px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          border-radius: 14px;
+          background: #fff;
+          box-shadow: 0 2px 12px rgba(99,102,241,0.10);
+          border: 2px solid #e0e7ff;
+          padding: 12px 6px 10px 6px;
+          margin-bottom: 14px;
+          transition: box-shadow 0.18s, border 0.18s;
+        }
+        .enhanced-file-box:hover {
+          box-shadow: 0 4px 20px rgba(99,102,241,0.18);
+          border: 2px solid #6366f1;
+        }
+        .enhanced-file-icon {
+          width: 38px;
+          height: 38px;
+          margin-bottom: 6px;
+        }
+        .enhanced-file-name {
+          font-size: 0.98rem;
+          word-break: break-all;
+          text-align: center;
+          color: var(--primary);
+          background: rgba(255,255,255,0.85);
+          border-radius: 4px;
+          padding: 2px 4px;
+          box-shadow: 0 1px 2px #eee;
+          margin-bottom: 4px;
+          max-width: 120px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .enhanced-download-btn {
+          margin-top: 6px;
+          font-size: 0.95rem;
+          color: #6366f1;
+          text-decoration: underline;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .enhanced-download-icon {
+          width: 16px;
+          height: 16px;
+        }
+        .enhanced-actions {
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          margin-top: 10px;
+          position: absolute;
+          left: 0;
+          bottom: 10px;
+          z-index: 2;
+        }
+        .enhanced-btn {
+          background: #f3f4f6;
+          border: none;
+          color: #6366f1;
+          font-size: 1.18rem;
+          border-radius: 50%;
+          width: 34px;
+          height: 34px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+          opacity: 0.93;
+          transition: background 0.16s, color 0.16s, opacity 0.16s, box-shadow 0.16s;
+        }
+        .enhanced-btn:hover {
+          background: #6366f1;
+          color: #fff;
+          opacity: 1;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.13);
+        }
+        .enhanced-btn:active {
+          background: #a5b4fc;
+        }
+        .enhanced-btn.preview {
+          color: #2563eb;
+          background: #e0e7ff;
+        }
+        .enhanced-btn.preview:hover {
+          background: #6366f1;
+          color: #fff;
+        }
+        .enhanced-btn.delete {
+          color: #ef4444;
+          background: #fee2e2;
+        }
+        .enhanced-btn.delete:hover {
+          background: #ef4444;
+          color: #fff;
+        }
+        .enhanced-btn-icon {
+          width: 18px;
+          height: 18px;
+        }
+        @media (max-width: 700px) {
+          .enhanced-gallery {
+            padding: 12px 2px 18px 2px;
+            margin-top: 12px;
+          }
+          .enhanced-card {
+            width: 100px;
+            min-height: 120px;
+            padding: 6px 2px 10px 2px;
+            border-radius: 10px;
+          }
+          .enhanced-thumb, .enhanced-file-box {
+            height: 60px;
+            width: 60px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+          }
+          .enhanced-actions {
+            gap: 4px;
+            bottom: 4px;
+          }
+          .enhanced-btn {
+            width: 22px;
+            height: 22px;
+            font-size: 0.95rem;
+          }
+        }
+        @media (max-width: 480px) {
+          .enhanced-card {
+            width: 70px !important;
+            min-height: 70px;
+            padding: 2px 0 4px 0;
+          }
+          .enhanced-thumb, .enhanced-file-box {
+            height: 32px;
+            width: 32px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+          }
+          .enhanced-actions {
+            gap: 2px;
+            bottom: 2px;
+          }
+          .enhanced-btn {
+            width: 16px;
+            height: 16px;
+            font-size: 0.7rem;
+          }
+        }
         :root {
           --bg-gradient: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);
           --hero-bg: #fff;
