@@ -6,9 +6,11 @@ import fs from 'fs/promises';
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 // GET /api/gallery/[code]/images: fetch all images for a gallery
-export async function GET(req: NextRequest, context: { params: { code: string } }) {
+export async function GET(req: NextRequest) {
   try {
-    const { code } = context.params;
+    const segments = req.nextUrl.pathname.split("/");
+    // /api/gallery/[code]/images => ['', 'api', 'gallery', '{code}', 'images']
+    const code = segments[3];
     const images = await prisma.image.findMany({
       where: { code },
       orderBy: { createdAt: 'desc' },
@@ -23,9 +25,11 @@ export async function GET(req: NextRequest, context: { params: { code: string } 
 }
 
 // POST /api/gallery/[code]/images: upload a file (image or any file type)
-export async function POST(req: NextRequest, context: { params: { code: string } }) {
+export async function POST(req: NextRequest) {
   try {
-    const { code } = context.params;
+    const segments = req.nextUrl.pathname.split("/");
+    // /api/gallery/[code]/images => ['', 'api', 'gallery', '{code}', 'images']
+    const code = segments[3];
     const formData = await req.formData();
     const file = formData.get('file') as File;
     if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
