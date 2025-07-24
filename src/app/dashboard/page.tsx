@@ -88,6 +88,8 @@ export default function DashboardPage() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
+  const [joinPassword, setJoinPassword] = useState("");
+  const [joinNeedsPassword, setJoinNeedsPassword] = useState(false);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
@@ -183,9 +185,9 @@ export default function DashboardPage() {
           </div>
         {/* Join with Code Modal */}
         {showJoinModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => { setShowJoinModal(false); setJoinCode(""); setJoinError(""); }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => { setShowJoinModal(false); setJoinCode(""); setJoinError(""); setJoinPassword(""); setJoinNeedsPassword(false); }}>
             <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative" onClick={e => e.stopPropagation()}>
-              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl" onClick={() => { setShowJoinModal(false); setJoinCode(""); setJoinError(""); }} aria-label="Close">&times;</button>
+              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl" onClick={() => { setShowJoinModal(false); setJoinCode(""); setJoinError(""); setJoinPassword(""); setJoinNeedsPassword(false); }} aria-label="Close">&times;</button>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Join Gallery by Code</h2>
               <form onSubmit={async e => {
                 e.preventDefault();
@@ -194,15 +196,28 @@ export default function DashboardPage() {
                   setJoinError("Please enter a valid code.");
                   return;
                 }
-                // Check if gallery exists
+                // Check if gallery exists and if it needs a password
                 const { data: galleryData, error } = await supabase
                   .from("galleries")
-                  .select("id, code")
+                  .select("id, code, password")
                   .eq("code", joinCode.trim())
                   .single();
                 if (error || !galleryData) {
                   setJoinError("Gallery not found.");
                   return;
+                }
+                if (galleryData.password) {
+                  // If password required, check it
+                  if (!joinPassword) {
+                    setJoinNeedsPassword(true);
+                    setJoinError("This gallery requires a password.");
+                    return;
+                  }
+                  if (galleryData.password !== joinPassword) {
+                    setJoinNeedsPassword(true);
+                    setJoinError("Incorrect password.");
+                    return;
+                  }
                 }
                 // Add user to gallery_members
                 await supabase.from("gallery_members").insert({
@@ -212,13 +227,34 @@ export default function DashboardPage() {
                 setShowJoinModal(false);
                 setJoinCode("");
                 setJoinError("");
-                // Optionally refresh galleries list
+                setJoinPassword("");
+                setJoinNeedsPassword(false);
                 router.push(`/dashboard/gallery/${galleryData.code}`);
               }} className="flex flex-col gap-4">
                 <label className="flex flex-col gap-1">
                   <span className="font-medium text-gray-800">Gallery Code</span>
-                  <input type="text" value={joinCode} onChange={e => setJoinCode(e.target.value)} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-black" placeholder="Enter gallery code" autoFocus />
+                  <input type="text" value={joinCode} onChange={async e => {
+                    setJoinCode(e.target.value);
+                    setJoinError("");
+                    setJoinNeedsPassword(false);
+                    setJoinPassword("");
+                    // Check if gallery needs password as user types
+                    if (e.target.value.trim()) {
+                      const { data: galleryData } = await supabase
+                        .from("galleries")
+                        .select("password")
+                        .eq("code", e.target.value.trim())
+                        .single();
+                      setJoinNeedsPassword(!!(galleryData && galleryData.password));
+                    }
+                  }} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-black" placeholder="Enter gallery code" autoFocus />
                 </label>
+                {joinNeedsPassword && (
+                  <label className="flex flex-col gap-1">
+                    <span className="font-medium text-gray-800">Gallery Password</span>
+                    <input type="password" value={joinPassword} onChange={e => setJoinPassword(e.target.value)} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-black" placeholder="Enter gallery password" />
+                  </label>
+                )}
                 {joinError && <div className="text-red-600 text-sm">{joinError}</div>}
                 <button type="submit" className="mt-4 px-6 py-3 rounded-xl bg-green-600 text-white text-lg font-semibold shadow hover:bg-green-700 transition">Join Gallery</button>
               </form>
