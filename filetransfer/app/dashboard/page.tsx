@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 type Gallery = { id: string; name: string; code: string; password?: string };
@@ -248,21 +249,33 @@ export default function DashboardPage() {
                 e.preventDefault();
                 if (!resetPasswordFields.current || !resetPasswordFields.new || !resetPasswordFields.confirm) return;
                 if (resetPasswordFields.new !== resetPasswordFields.confirm) {
-                  alert("New passwords do not match.");
+                  await Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "New passwords do not match."
+                  });
                   return;
                 }
                 // Check current password
                 if (!resetPasswordModal.gallery) return;
                 const { data: galleryData } = await supabase.from("galleries").select("password").eq("id", resetPasswordModal.gallery.id).single();
                 if (!galleryData || galleryData.password !== resetPasswordFields.current) {
-                  alert("Current password is incorrect.");
+                  await Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Current password is incorrect."
+                  });
                   return;
                 }
                 // Update password
                 await supabase.from("galleries").update({ password: resetPasswordFields.new }).eq("id", resetPasswordModal.gallery.id);
                 setResetPasswordFields({ current: "", new: "", confirm: "" });
                 setResetPasswordModal({ open: false, gallery: null });
-                alert("Password updated.");
+                await Swal.fire({
+                  icon: "success",
+                  title: "Password updated",
+                  text: "The password has been updated successfully."
+                });
               }} className="flex flex-col gap-4">
                 <label className="flex flex-col gap-1">
                   <span className="font-medium text-gray-800">Current Password</span>
@@ -375,7 +388,11 @@ export default function DashboardPage() {
                     setGalleryInvites("");
                     router.push(`/dashboard/gallery/${newGallery.code}`);
                   } catch (err) {
-                    alert("Failed to create gallery: " + (err instanceof Error ? err.message : "Unknown error"));
+                  await Swal.fire({
+                    icon: "error",
+                    title: "Failed to create gallery",
+                    text: err instanceof Error ? err.message : "Unknown error"
+                  });
                   }
                 }}
                 className="flex flex-col gap-4"
