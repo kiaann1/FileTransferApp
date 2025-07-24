@@ -28,7 +28,14 @@ export default function GalleryPage() {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const router = useRouter();
   const { code } = useParams();
-  const [gallery, setGallery] = useState<any>(null);
+  type Gallery = {
+    id: string;
+    name: string;
+    code: string;
+    password?: string;
+    // add other fields as needed
+  };
+  const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [passwordInput, setPasswordInput] = useState("");
