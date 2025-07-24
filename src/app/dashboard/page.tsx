@@ -10,7 +10,6 @@ type GalleryCardProps = {
   onAddUsers: (gallery: Gallery) => void;
   onResetPassword: (gallery: Gallery) => void;
   userId: string | null;
-  userId: string | null;
 };
 
 function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword, userId }: GalleryCardProps) {
@@ -31,7 +30,7 @@ function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword, userId }:
 
   // Detect mobile device
   const isMobile = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-  const isOwner = gallery && gallery.owner_id === props.userId;
+  const isOwner = gallery && gallery.owner_id === userId;
   return (
     <div
       className="relative bg-white rounded-xl shadow p-6 hover:shadow-lg border border-gray-200 transition cursor-pointer"
