@@ -193,32 +193,33 @@ useEffect(() => {
     }
   };
   fetchGallery();
-  // Paste handler for images
-  async function handlePaste(e: ClipboardEvent) {
+  // Paste handler for images/files
+  function handlePaste(e: ClipboardEvent) {
     if (uploading) return;
     // Only allow paste if not focused on an input/textarea
     const active = document.activeElement;
     if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
-    if (e.clipboardData) {
-      const files: File[] = [];
-      const items = e.clipboardData.items;
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
+    let files: File[] = [];
+    // Try clipboardData.items first
+    if (e.clipboardData && e.clipboardData.items) {
+      for (let i = 0; i < e.clipboardData.items.length; i++) {
+        const item = e.clipboardData.items[i];
         if (item.kind === "file") {
           const file = item.getAsFile();
           if (file) files.push(file);
         }
       }
-      if (files.length > 0) {
-        await handleFileUpload(files);
-        e.preventDefault();
-        return;
+    }
+    // Fallback: clipboardData.files (for some browsers)
+    if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+      for (let i = 0; i < e.clipboardData.files.length; i++) {
+        const file = e.clipboardData.files[i];
+        if (file) files.push(file);
       }
-      // Fallback: check clipboardData.files (for some browsers)
-      if (e.clipboardData.files && e.clipboardData.files.length > 0) {
-        await handleFileUpload(e.clipboardData.files);
-        e.preventDefault();
-      }
+    }
+    if (files.length > 0) {
+      handleFileUpload(files);
+      e.preventDefault();
     }
   }
   document.addEventListener("paste", handlePaste);

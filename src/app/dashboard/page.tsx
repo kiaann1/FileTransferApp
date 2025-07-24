@@ -141,13 +141,6 @@ export default function DashboardPage() {
                 )} */}
               </button>
             </div>
-            {/* Join with Code Button */}
-            <button
-              className="px-4 py-2 rounded-xl bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
-              onClick={() => setShowJoinModal(true)}
-            >
-              Join with Code
-            </button>
           </div>
         </div>
         {/* Gallery list with create button */}
