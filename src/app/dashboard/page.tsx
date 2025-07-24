@@ -9,9 +9,11 @@ type GalleryCardProps = {
   onDelete: (id: string) => void;
   onAddUsers: (gallery: Gallery) => void;
   onResetPassword: (gallery: Gallery) => void;
+  userId: string | null;
+  userId: string | null;
 };
 
-function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword }: GalleryCardProps) {
+function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword, userId }: GalleryCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -29,10 +31,7 @@ function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword }: Gallery
 
   // Detect mobile device
   const isMobile = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-  // Get user from context (passed as prop or from global state)
-  // For this patch, we'll use window.__DASHBOARD_USER_ID as a workaround
-  const userId = typeof window !== "undefined" ? (window as any).__DASHBOARD_USER_ID : null;
-  const isOwner = userId && gallery && gallery.owner_id === userId;
+  const isOwner = gallery && gallery.owner_id === props.userId;
   return (
     <div
       className="relative bg-white rounded-xl shadow p-6 hover:shadow-lg border border-gray-200 transition cursor-pointer"
@@ -292,6 +291,7 @@ export default function DashboardPage() {
                   }}
                   onAddUsers={(gallery) => setAddUsersModal({ open: true, gallery })}
                   onResetPassword={(gallery) => setResetPasswordModal({ open: true, gallery })}
+                  userId={user?.id ?? null}
                 />
               ))}
             </div>
