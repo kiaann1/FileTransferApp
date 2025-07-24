@@ -46,7 +46,7 @@ export default function HomePage() {
           <h1 className="text-5xl font-extrabold text-blue-900 mb-6 leading-tight">Find anything.<br/>Protect everything.</h1>
           <p className="text-lg text-gray-600 mb-8 max-w-md">Find, organize, and protect your work with FileTransfer. Secure, fast, and enhanced by privacy-first AI capabilities. Modern SaaS experience for teams and creators.</p>
           <div className="flex gap-4 mb-8">
-            <Link href="/login" className="px-6 py-3 rounded-lg bg-blue-600 text-white text-lg font-semibold shadow hover:bg-blue-700 transition">What's new with us</Link>
+            <Link href="/login" className="px-6 py-3 rounded-lg bg-blue-600 text-white text-lg font-semibold shadow hover:bg-blue-700 transition">What&apos;s new with us</Link>
             <Link href="/login" className="px-6 py-3 rounded-lg bg-gray-100 text-blue-700 text-lg font-semibold shadow hover:bg-gray-200 transition">Try FileTransfer free</Link>
           </div>
         </div>

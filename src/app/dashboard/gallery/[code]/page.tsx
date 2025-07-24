@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabaseClient";
@@ -124,7 +125,7 @@ export default function GalleryPage() {
   // Fetch gallery by code
   useEffect(() => {
     if (!code) return;
-    (async () => {
+    async function fetchGallery() {
       const { data: galleryData, error } = await supabase
         .from("galleries")
         .select("*")
@@ -141,7 +142,7 @@ export default function GalleryPage() {
       setLoading(false);
     })();
     // Paste handler for images
-    function handlePaste(e: ClipboardEvent) {
+    function handlePaste(e: ClipboardEvent): void {
       if (uploading) return;
       // Only allow paste if not focused on an input/textarea
       const active = document.activeElement;
@@ -205,7 +206,7 @@ export default function GalleryPage() {
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("gallery-files")
         .upload(filePath, file, {
-          cacheControl: "3600",
+          cacheControl: "3600", 
           upsert: false,
         });
       if (uploadError) {
@@ -220,7 +221,7 @@ export default function GalleryPage() {
       let dbType: 'image' | 'file' | 'folder' = 'file';
       if (file.type && file.type.startsWith('image')) dbType = 'image';
       const { error: insertError, data: insertData } = await supabase.from("gallery_files").insert({
-        gallery_id: gallery.id,
+        gallery_id: gallery.id, 
         name: file.name,
         type: dbType,
         url: urlData?.publicUrl || null,
@@ -491,7 +492,7 @@ export default function GalleryPage() {
                       >
                         <div className="w-full flex justify-center mb-4">
                           {file.type === 'image' ? (
-                            <img src={file.url} alt={file.name} className="rounded-xl max-h-40 max-w-full shadow border group-hover:scale-105 transition cursor-pointer"
+                          <Image src={file.url} alt={file.name} width={320} height={160} className="rounded-xl max-h-40 max-w-full shadow border group-hover:scale-105 transition cursor-pointer"
                               onClick={async (e: React.MouseEvent<HTMLImageElement>) => {
                                 e.preventDefault();
                                 try {
@@ -637,7 +638,7 @@ export default function GalleryPage() {
                   {/* Left: Image Preview or File Icon */}
                   <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white p-8 gap-6 border-r border-gray-200">
                     {modalFile.type === 'image' ? (
-                      <img src={modalFile.url} alt={modalFile.name} className="rounded-xl max-h-[350px] max-w-full shadow-lg border" />
+                      <Image src={modalFile.url} alt={modalFile.name} width={350} height={350} className="rounded-xl max-h-[350px] max-w-full shadow-lg border" />
                     ) : modalFile.type === 'folder' ? (
                       <div className="mb-2 text-gray-400"><svg width="64" height="64" fill="none" viewBox="0 0 32 32"><rect x="4" y="10" width="24" height="12" rx="3" fill="#FBBF24"/><rect x="4" y="6" width="10" height="8" rx="2" fill="#FDE68A"/></svg></div>
                     ) : (
