@@ -82,7 +82,9 @@ export default function GalleryPage() {
     const filePath = urlParts.slice(urlParts.length - 2).join('/');
     await supabase.storage.from('gallery-files').remove([filePath]);
     await supabase.from('gallery_files').delete().eq('id', file.id);
-    fetchFiles(gallery.id);
+    if (gallery) {
+      fetchFiles(gallery.id);
+    }
   }
 
   // Bulk delete handler
@@ -105,7 +107,9 @@ export default function GalleryPage() {
     // Remove from DB (single query for all IDs)
     await supabase.from('gallery_files').delete().in('id', selectedFiles);
     setSelectedFiles([]);
-    fetchFiles(gallery.id);
+    if (gallery) {
+      fetchFiles(gallery.id);
+    }
   }
 
   // Hide context menu on click elsewhere
@@ -281,12 +285,14 @@ export default function GalleryPage() {
                   setSettingsError("Gallery name is required.");
                   return;
                 }
-                await supabase.from("galleries").update({
-                  name: settingsName.trim(),
-                  password: settingsPassword.trim() || null
-                }).eq("id", gallery.id);
-                setShowSettingsModal(false);
-                fetchFiles(gallery.id);
+                if (gallery) {
+                  await supabase.from("galleries").update({
+                    name: settingsName.trim(),
+                    password: settingsPassword.trim() || null
+                  }).eq("id", gallery.id);
+                  setShowSettingsModal(false);
+                  fetchFiles(gallery.id);
+                }
               }}>
                 <div>
                   <label className="block text-gray-700 font-semibold mb-2">Gallery Name</label>
@@ -303,10 +309,12 @@ export default function GalleryPage() {
                     <button type="button" className="px-4 py-2 bg-blue-600 text-white rounded font-semibold shadow hover:bg-blue-700 transition" onClick={async () => {
                       if (!inviteEmail.trim()) return;
                       // Insert into gallery_members (stub, add actual user logic as needed)
-                      await supabase.from("gallery_members").insert({
-                        gallery_id: gallery.id,
-                        email: inviteEmail.trim()
-                      });
+                      if (gallery) {
+                        await supabase.from("gallery_members").insert({
+                          gallery_id: gallery.id,
+                          email: inviteEmail.trim()
+                        });
+                      }
                       setInviteEmail("");
                     }}>Invite</button>
                   </div>
@@ -335,16 +343,18 @@ export default function GalleryPage() {
                 }
                 setNewFolderError("");
                 // Insert folder into DB
-                await supabase.from("gallery_files").insert({
-                  gallery_id: gallery.id,
-                  name: newFolderName.trim(),
-                  type: "folder",
-                  url: null
-                });
-                setShowNewFolderModal(false);
-                setNewFolderName("");
-                fetchFiles(gallery.id);
-                setActiveTab('folders');
+                if (gallery) {
+                  await supabase.from("gallery_files").insert({
+                    gallery_id: gallery.id,
+                    name: newFolderName.trim(),
+                    type: "folder",
+                    url: null
+                  });
+                  setShowNewFolderModal(false);
+                  setNewFolderName("");
+                  fetchFiles(gallery.id);
+                  setActiveTab('folders');
+                }
               }} className="flex flex-col gap-4">
                 <input
                   type="text"
@@ -455,13 +465,15 @@ export default function GalleryPage() {
                         onClick={async () => {
                           setActiveFolder(file);
                           // Fetch files in this folder
-                          const { data: folderFilesData } = await supabase
-                            .from("gallery_files")
-                            .select("*")
-                            .eq("gallery_id", gallery.id)
-                            .eq("type", "file")
-                            .like("url", `%/${file.name}/%`);
-                          setFolderFiles(folderFilesData || []);
+                          if (gallery) {
+                            const { data: folderFilesData } = await supabase
+                              .from("gallery_files")
+                              .select("*")
+                              .eq("gallery_id", gallery.id)
+                              .eq("type", "file")
+                              .like("url", `%/${file.name}/%`);
+                            setFolderFiles(folderFilesData || []);
+                          }
                         }}
                       >
                         <div className="text-gray-400 mb-2"><svg width="40" height="40" fill="none" viewBox="0 0 32 32"><rect x="4" y="10" width="24" height="12" rx="3" fill="#FBBF24"/><rect x="4" y="6" width="10" height="8" rx="2" fill="#FDE68A"/></svg></div>
@@ -535,7 +547,7 @@ export default function GalleryPage() {
                           for (let i = 0; i < e.target.files.length; i++) {
                             const file = e.target.files[i];
                             const timestamp = Date.now();
-                            const filePath = `${gallery.code}/${activeFolder.name}/${timestamp}_${file.name}`;
+                            const filePath = gallery ? `${gallery.code}/${activeFolder.name}/${timestamp}_${file.name}` : "";
                             const { error: uploadError } = await supabase.storage
                               .from("gallery-files")
                               .upload(filePath, file, {
@@ -546,23 +558,29 @@ export default function GalleryPage() {
                               const { data: urlData } = supabase.storage
                                 .from("gallery-files")
                                 .getPublicUrl(filePath);
-                              await supabase.from("gallery_files").insert({
-                                gallery_id: gallery.id,
-                                name: file.name,
-                                type: file.type && file.type.startsWith('image') ? 'image' : 'file',
-                                url: urlData?.publicUrl || null
-                              });
+                              if (gallery) {
+                                await supabase.from("gallery_files").insert({
+                                  gallery_id: gallery.id,
+                                  name: file.name,
+                                  type: file.type && file.type.startsWith('image') ? 'image' : 'file',
+                                  url: urlData?.publicUrl || null
+                                });
+                              }
                             }
                           }
                           setFolderUploading(false);
                           // Refresh folder files
-                          const { data: folderFilesData } = await supabase
-                            .from("gallery_files")
-                            .select("*")
-                            .eq("gallery_id", gallery.id)
-                            .eq("type", "file")
-                            .like("url", `%/${activeFolder.name}/%`);
-                          setFolderFiles(folderFilesData || []);
+                          if (gallery) {
+                          if (gallery) {
+                            const { data: folderFilesData } = await supabase
+                              .from("gallery_files")
+                              .select("*")
+                              .eq("gallery_id", gallery.id)
+                              .eq("type", "file")
+                              .like("url", `%/${activeFolder.name}/%`);
+                            setFolderFiles(folderFilesData || []);
+                          }
+                          }
                         }}
                         disabled={folderUploading}
                       />
