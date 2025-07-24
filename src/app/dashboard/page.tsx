@@ -27,8 +27,22 @@ function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword }: Gallery
     return () => document.removeEventListener("mousedown", handleClick);
   }, [menuOpen]);
 
+  // Detect mobile device
+  const isMobile = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
   return (
-    <div className="relative bg-white rounded-xl shadow p-6 hover:shadow-lg border border-gray-200 transition">
+    <div
+      className="relative bg-white rounded-xl shadow p-6 hover:shadow-lg border border-gray-200 transition cursor-pointer"
+      onClick={() => {
+        if (isMobile) setMenuOpen(true);
+      }}
+      onContextMenu={e => {
+        e.preventDefault();
+        if (!isMobile) setMenuOpen((v) => !v);
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`Open menu for ${gallery.name}`}
+    >
       <a
         href={`/dashboard/gallery/${gallery.code}`}
         className="block"
@@ -38,7 +52,10 @@ function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword }: Gallery
       </a>
       <button
         className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 focus:outline-none"
-        onClick={() => setMenuOpen((v) => !v)}
+        onClick={e => {
+          e.stopPropagation();
+          setMenuOpen((v) => !v);
+        }}
         aria-label="Gallery Settings"
       >
         {/* Better Cog SVG */}
@@ -120,7 +137,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      <div className="max-w-6xl mx-auto py-12 px-6">
+      <div className="max-w-6xl mx-auto py-6 px-2 sm:px-4 md:px-6 lg:px-6">
         {/* Welcome header */}
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -145,9 +162,9 @@ export default function DashboardPage() {
         </div>
         {/* Gallery list with create button */}
         <section className="mb-10">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <h2 className="text-xl font-bold text-gray-900">Your Galleries</h2>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
                 onClick={() => setShowModal(true)}
@@ -220,7 +237,7 @@ export default function DashboardPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
               {galleries.map(gallery => (
                 <GalleryCard
                   key={gallery.id}
@@ -356,7 +373,7 @@ export default function DashboardPage() {
         {/* Recent activity */}
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="bg-gray-50 rounded-xl shadow p-6">
+          <div className="bg-gray-50 rounded-xl shadow p-4 sm:p-6">
             <div className="text-gray-700">No recent activity.</div>
           </div>
         </section>
