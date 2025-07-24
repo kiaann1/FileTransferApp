@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -13,6 +13,23 @@ export default function HomePage() {
     setLoggedIn(false);
     router.push("/");
   };
+
+  useEffect(() => {
+    // Check session on mount
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setLoggedIn(!!data?.session);
+    };
+    checkSession();
+
+    // Listen for auth state changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLoggedIn(!!session);
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center">
