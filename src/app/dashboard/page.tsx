@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 type Gallery = { id: string; name: string; code: string; password?: string };
 type GalleryCardProps = {
   gallery: Gallery;

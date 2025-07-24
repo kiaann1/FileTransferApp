@@ -1,12 +1,38 @@
-// This file contains the Supabase table schemas for reference
-// You can use the Supabase dashboard or SQL editor to create these tables
+-- Galleries table
+CREATE TABLE galleries (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  code text UNIQUE NOT NULL,
+  password text,
+  owner_id uuid NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-/*
-User: id (uuid, pk), name (text), email (text, unique), createdAt (timestamp)
-Gallery: id (uuid, pk), code (text, unique), ownerId (uuid, fk User), passwordHash (text, nullable), createdAt (timestamp)
-File: id (uuid, pk), galleryId (uuid, fk Gallery), userId (uuid, fk User), name (text), size (int), url (text), encrypted (bool), metadata (jsonb), folderId (uuid, fk Folder, nullable), createdAt (timestamp)
-Folder: id (uuid, pk), galleryId (uuid, fk Gallery), name (text), parentId (uuid, fk Folder, nullable), createdAt (timestamp)
-Comment: id (uuid, pk), fileId (uuid, fk File), userId (uuid, fk User), body (text), createdAt (timestamp)
-Team: id (uuid, pk), name (text), ownerId (uuid, fk User)
-TeamMember: id (uuid, pk), teamId (uuid, fk Team), userId (uuid, fk User), role (text)
-*/
+-- Gallery files table
+CREATE TABLE gallery_files (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  gallery_id uuid REFERENCES galleries(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  url text NOT NULL,
+  type text,
+  size bigint,
+  uploaded_by uuid,
+  uploaded_at timestamptz DEFAULT now()
+);
+
+-- Gallery members table
+CREATE TABLE gallery_members (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  gallery_id uuid REFERENCES galleries(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL,
+  joined_at timestamptz DEFAULT now()
+);
+
+-- Gallery invites table
+CREATE TABLE gallery_invites (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  gallery_id uuid REFERENCES galleries(id) ON DELETE CASCADE,
+  email text NOT NULL,
+  invited_by uuid,
+  invited_at timestamptz DEFAULT now()
+);
