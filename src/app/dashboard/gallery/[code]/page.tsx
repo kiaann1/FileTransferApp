@@ -125,7 +125,7 @@ export default function GalleryPage() {
   // Fetch gallery by code
   useEffect(() => {
     if (!code) return;
-    async function fetchGallery() {
+    const fetchGallery = async () => {
       const { data: galleryData, error } = await supabase
         .from("galleries")
         .select("*")
@@ -140,7 +140,9 @@ export default function GalleryPage() {
         setShowPasswordModal(true);
       }
       setLoading(false);
-    })();
+    };
+    fetchGallery();
+
     // Paste handler for images
     function handlePaste(e: ClipboardEvent): void {
       if (uploading) return;
@@ -148,16 +150,12 @@ export default function GalleryPage() {
       const active = document.activeElement;
       if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
       if (e.clipboardData) {
-        console.log('PASTE EVENT: clipboardData', e.clipboardData);
         let found = false;
         const items = e.clipboardData.items;
-        console.log('PASTE EVENT: clipboardData.items', items);
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
-          console.log('PASTE EVENT: item', item);
           if (item.kind === "file" && (item.type === "image/png" || item.type === "image/jpeg" || item.type.startsWith("image"))) {
             const file = item.getAsFile();
-            console.log('PASTE EVENT: found image file', file);
             if (file) {
               handleFileUpload([file]);
               e.preventDefault();
@@ -168,12 +166,9 @@ export default function GalleryPage() {
         }
         // Fallback: check clipboardData.files (for some browsers)
         if (!found && e.clipboardData.files && e.clipboardData.files.length > 0) {
-          console.log('PASTE EVENT: clipboardData.files', e.clipboardData.files);
           handleFileUpload(e.clipboardData.files);
           e.preventDefault();
         }
-      } else {
-        console.log('PASTE EVENT: No clipboardData');
       }
     }
     document.addEventListener("paste", handlePaste);
