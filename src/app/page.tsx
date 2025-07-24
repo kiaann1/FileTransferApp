@@ -79,29 +79,53 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="w-full max-w-4xl mx-auto py-12 px-4">
-        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Trusted by teams and creators</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white rounded-xl shadow p-6">
-            <p className="text-gray-700 italic mb-4">“FileTransfer has made our workflow so much smoother. The privacy features are a game changer!”</p>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">A</div>
+      {/* Depth Section - Add visual substance */}
+      <section className="w-full max-w-6xl mx-auto py-16 px-4 grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 rounded-2xl shadow-2xl p-10 flex flex-col items-center border border-blue-100">
+          <h2 className="text-3xl font-extrabold text-blue-700 mb-4">Why FileTransfer?</h2>
+          <ul className="space-y-4 w-full">
+            <li className="flex items-start gap-3">
+              <span className="inline-block w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">1</span>
               <div>
-                <div className="font-semibold text-gray-900">Alex, Designer</div>
-                <div className="text-gray-400 text-sm">Acme Studio</div>
+                <span className="font-semibold text-gray-900">Instant Setup</span>
+                <div className="text-gray-500 text-sm">Get started in seconds with no complex onboarding.</div>
               </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow p-6">
-            <p className="text-gray-700 italic mb-4">“The best file management SaaS for teams. Fast, secure, and easy to use.”</p>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">J</div>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="inline-block w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">2</span>
               <div>
-                <div className="font-semibold text-gray-900">Jamie, Project Lead</div>
-                <div className="text-gray-400 text-sm">BrightTech</div>
+                <span className="font-semibold text-gray-900">Real-Time Collaboration</span>
+                <div className="text-gray-500 text-sm">Work together with your team, live and securely.</div>
               </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="inline-block w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">3</span>
+              <div>
+                <span className="font-semibold text-gray-900">AI-Powered Search</span>
+                <div className="text-gray-500 text-sm">Find files instantly with privacy-first AI search.</div>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="inline-block w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">4</span>
+              <div>
+                <span className="font-semibold text-gray-900">Enterprise Security</span>
+                <div className="text-gray-500 text-sm">Your files are encrypted and protected at every step.</div>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div className="flex flex-col items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 w-full max-w-md">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">See FileTransfer in Action</h3>
+            <div className="w-full h-56 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center mb-4">
+              <span className="text-blue-700 text-xl font-bold">[Product Screenshot / Demo Animation]</span>
             </div>
+            <ul className="space-y-2">
+              <li className="text-gray-600 text-sm">✔ Drag & drop uploads</li>
+              <li className="text-gray-600 text-sm">✔ Folder sharing</li>
+              <li className="text-gray-600 text-sm">✔ Secure previews</li>
+              <li className="text-gray-600 text-sm">✔ Team management</li>
+            </ul>
           </div>
         </div>
       </section>
