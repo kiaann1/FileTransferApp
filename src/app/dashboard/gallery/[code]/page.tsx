@@ -169,14 +169,15 @@ async function fetchFiles(galleryId: string) {
   setFiles(filesData || []);
 }
 
-// Fetch gallery by code
+// Fetch gallery by code (only minimal info, never expose user object)
 useEffect(() => {
   if (!code) return;
   let cancelled = false;
   const fetchGallery = async () => {
+    // Only fetch gallery info, never user object or metadata
     const { data: galleryData, error } = await supabase
       .from("galleries")
-      .select("*")
+      .select("id, name, code, password")
       .eq("code", code)
       .single();
     if (!cancelled) {
