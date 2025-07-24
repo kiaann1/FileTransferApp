@@ -127,7 +127,7 @@ export default function DashboardPage() {
   }, [user]);
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return <div className="p-8">Loading..</div>;
   }
 
   // TODO: Fetch invites and activity from Supabase
