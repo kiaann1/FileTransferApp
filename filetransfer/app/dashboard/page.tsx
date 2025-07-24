@@ -95,13 +95,13 @@ export default function DashboardPage() {
         .from("gallery_members")
         .select("gallery_id, galleries (id, name, code)")
         .eq("user_id", user.id);
-      if (!error && data) {
-        // Flatten and filter out null galleries
-        setGalleries(
-          data
-            .map((row: any) => row.galleries)
-            .filter((g: any) => g)
-        );
+       if (!error && data) {
+         // Flatten and filter out null galleries
+         const allGalleries: Gallery[] = data
+           .map((row: { galleries: Gallery[] }) => row.galleries)
+           .flat()
+           .filter((g: Gallery | null): g is Gallery => g !== null);
+         setGalleries(allGalleries);
       }
     })();
   }, [user]);
@@ -111,8 +111,9 @@ export default function DashboardPage() {
   }
 
   // TODO: Fetch invites and activity from Supabase
-  const invites = [];
-  const recentActivity = [];
+  // TODO: Fetch invites and activity from Supabase
+  // const invites = [];
+  // const recentActivity = [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -131,9 +132,10 @@ export default function DashboardPage() {
               {/* Bell SVG */}
               <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><path d="M14 25c1.657 0 3-1.343 3-3h-6c0 1.657 1.343 3 3 3zm7-7V12c0-3.314-2.686-6-6-6S9 8.686 9 12v6l-2 2v1h16v-1l-2-2z" fill="#2563EB"/></svg>
               {/* Notification badge if invites exist */}
-              {invites.length > 0 && (
-                <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
-              )}
+      {/* Uncomment and use invites array when implemented */}
+      {/* {invites.length > 0 && (
+        <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
+      )} */}
             </button>
           </div>
         </div>

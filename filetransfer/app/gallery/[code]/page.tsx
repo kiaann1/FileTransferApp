@@ -1,7 +1,13 @@
 import { supabase } from "@/lib/supabaseClient";
 import { redirect } from "next/navigation";
 
-export default async function GalleryPage({ params }: { params: { code: string } }) {
+type PageProps = {
+  params: {
+    code: string;
+  };
+};
+
+export default async function GalleryPage({ params }: PageProps) {
   // Example: fetch gallery by code
   const { data: gallery } = await supabase
     .from("Gallery")
