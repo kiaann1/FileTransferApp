@@ -215,10 +215,13 @@ export default function GalleryPage() {
 
   // Fetch files when gallery is set and not password protected, or when password modal is closed
   useEffect(() => {
+    // Prevent repeated fetches by checking if files are already loaded
     if (gallery && (!gallery.password || !showPasswordModal)) {
-      fetchFiles(gallery.id);
+      if (files.length === 0) {
+        fetchFiles(gallery.id);
+      }
     }
-  }, [gallery, showPasswordModal]);
+  }, [gallery, showPasswordModal, files.length]);
 
   async function fetchFiles(galleryId: string) {
     const { data: filesData } = await supabase
