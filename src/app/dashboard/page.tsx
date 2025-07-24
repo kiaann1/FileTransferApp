@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
-type Gallery = { id: string; name: string; code: string; password?: string };
+type Gallery = { id: string; name: string; code: string; password?: string; owner_id: string };
 type GalleryCardProps = {
   gallery: Gallery;
   onDelete: (id: string) => void;
@@ -29,6 +29,10 @@ function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword }: Gallery
 
   // Detect mobile device
   const isMobile = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  // Get user from context (passed as prop or from global state)
+  // For this patch, we'll use window.__DASHBOARD_USER_ID as a workaround
+  const userId = typeof window !== "undefined" ? (window as any).__DASHBOARD_USER_ID : null;
+  const isOwner = userId && gallery && gallery.owner_id === userId;
   return (
     <div
       className="relative bg-white rounded-xl shadow p-6 hover:shadow-lg border border-gray-200 transition cursor-pointer"
@@ -67,12 +71,16 @@ function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword }: Gallery
             <li>
               <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700" onClick={() => { setMenuOpen(false); onAddUsers(gallery); }}>Add Users</button>
             </li>
-            <li>
-              <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700" onClick={() => { setMenuOpen(false); onResetPassword(gallery); }}>Reset Password</button>
-            </li>
-            <li>
-              <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600" onClick={() => { setMenuOpen(false); onDelete(gallery.id); }}>Delete Gallery</button>
-            </li>
+            {isOwner && (
+              <>
+                <li>
+                  <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700" onClick={() => { setMenuOpen(false); onResetPassword(gallery); }}>Reset Password</button>
+                </li>
+                <li>
+                  <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600" onClick={() => { setMenuOpen(false); onDelete(gallery.id); }}>Delete Gallery</button>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       )}
@@ -115,7 +123,7 @@ export default function DashboardPage() {
     (async () => {
       const { data, error } = await supabase
         .from("gallery_members")
-        .select("gallery_id, galleries (id, name, code)")
+        .select("gallery_id, galleries (id, name, code, owner_id)")
         .eq("user_id", user.id);
        if (!error && data) {
          // Flatten and filter out null galleries
