@@ -113,6 +113,44 @@ export default function GalleryPage() {
     }
   }
 
+  // Removed duplicate handleFileUpload declaration
+
+  const handleFileUpload = useCallback(async (filesList: File[] | FileList) => {
+    if (!gallery) return;
+    setUploading(true);
+    for (let i = 0; i < filesList.length; i++) {
+      const file = filesList[i];
+      const timestamp = Date.now();
+      const filePath = `${gallery.code}/${timestamp}_${file.name}`;
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("gallery-files")
+        .upload(filePath, file, {
+          cacheControl: "3600", 
+          upsert: false,
+        });
+      if (uploadError) {
+        alert(`Failed to upload ${file.name}: ${uploadError.message}`);
+        continue;
+      }
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("gallery-files")
+        .getPublicUrl(filePath);
+      // Insert metadata into gallery_files table
+      let dbType: 'image' | 'file' | 'folder' = 'file';
+      if (file.type && file.type.startsWith('image')) dbType = 'image';
+      await supabase.from("gallery_files").insert({
+        gallery_id: gallery.id, 
+        name: file.name,
+        type: dbType,
+        url: urlData?.publicUrl || null,
+      });
+    }
+    setUploading(false);
+    fetchFiles(gallery.id);
+  }, [gallery]);
+
   // Hide context menu on click elsewhere
   useEffect(() => {
     function handleClick() {
@@ -189,42 +227,6 @@ export default function GalleryPage() {
       .eq("gallery_id", galleryId);
     setFiles(filesData || []);
   }
-
-  const handleFileUpload = useCallback(async (filesList: File[] | FileList) => {
-    if (!gallery) return;
-    setUploading(true);
-    for (let i = 0; i < filesList.length; i++) {
-      const file = filesList[i];
-      const timestamp = Date.now();
-      const filePath = `${gallery.code}/${timestamp}_${file.name}`;
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from("gallery-files")
-        .upload(filePath, file, {
-          cacheControl: "3600", 
-          upsert: false,
-        });
-      if (uploadError) {
-        alert(`Failed to upload ${file.name}: ${uploadError.message}`);
-        continue;
-      }
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("gallery-files")
-        .getPublicUrl(filePath);
-      // Insert metadata into gallery_files table
-      let dbType: 'image' | 'file' | 'folder' = 'file';
-      if (file.type && file.type.startsWith('image')) dbType = 'image';
-      await supabase.from("gallery_files").insert({
-        gallery_id: gallery.id, 
-        name: file.name,
-        type: dbType,
-        url: urlData?.publicUrl || null,
-      });
-    }
-    setUploading(false);
-    fetchFiles(gallery.id);
-  }, [gallery]);
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
