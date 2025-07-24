@@ -162,13 +162,16 @@ export default function GalleryPage() {
 
   // Fetch gallery by code
   useEffect(() => {
-    if (!code) return;
-    const fetchGallery = async () => {
-      const { data: galleryData, error } = await supabase
-        .from("galleries")
-        .select("*")
-        .eq("code", code)
-        .single();
+useEffect(() => {
+  if (!code) return;
+  let cancelled = false;
+  const fetchGallery = async () => {
+    const { data: galleryData, error } = await supabase
+      .from("galleries")
+      .select("*")
+      .eq("code", code)
+      .single();
+    if (!cancelled) {
       if (error || !galleryData) {
         router.replace("/dashboard");
         return;
@@ -178,40 +181,40 @@ export default function GalleryPage() {
         setShowPasswordModal(true);
       }
       setLoading(false);
-    };
-    fetchGallery();
-
-    // Paste handler for images
-    function handlePaste(e: ClipboardEvent): void {
-      if (uploading) return;
-      // Only allow paste if not focused on an input/textarea
-      const active = document.activeElement;
-      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
-      if (e.clipboardData) {
-        let found = false;
-        const items = e.clipboardData.items;
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          if (item.kind === "file" && (item.type === "image/png" || item.type === "image/jpeg" || item.type.startsWith("image"))) {
-            const file = item.getAsFile();
-            if (file) {
-              handleFileUpload([file]);
-              e.preventDefault();
-              found = true;
-              break;
-            }
+    }
+  };
+  fetchGallery();
+  // Paste handler for images
+  function handlePaste(e: ClipboardEvent): void {
+    if (uploading) return;
+    // Only allow paste if not focused on an input/textarea
+    const active = document.activeElement;
+    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+    if (e.clipboardData) {
+      let found = false;
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === "file" && (item.type === "image/png" || item.type === "image/jpeg" || item.type.startsWith("image"))) {
+          const file = item.getAsFile();
+          if (file) {
+            handleFileUpload([file]);
+            e.preventDefault();
+            found = true;
+            break;
           }
         }
-        // Fallback: check clipboardData.files (for some browsers)
-        if (!found && e.clipboardData.files && e.clipboardData.files.length > 0) {
-          handleFileUpload(e.clipboardData.files);
-          e.preventDefault();
-        }
+      }
+      // Fallback: check clipboardData.files (for some browsers)
+      if (!found && e.clipboardData.files && e.clipboardData.files.length > 0) {
+        handleFileUpload(e.clipboardData.files);
+        e.preventDefault();
       }
     }
-    document.addEventListener("paste", handlePaste);
-    return () => document.removeEventListener("paste", handlePaste);
-  }, [code, router, uploading, handleFileUpload]);
+  }
+  document.addEventListener("paste", handlePaste);
+  return () => { cancelled = true; document.removeEventListener("paste", handlePaste); };
+}, [code]);
 
   // Fetch files when gallery is set and not password protected, or when password modal is closed
   useEffect(() => {
