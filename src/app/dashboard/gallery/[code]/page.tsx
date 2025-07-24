@@ -160,8 +160,16 @@ export default function GalleryPage() {
     return () => window.removeEventListener('click', handleClick);
   }, [contextMenu]);
 
-  // Fetch gallery by code
-  useEffect(() => {
+// Fetch files helper
+async function fetchFiles(galleryId: string) {
+  const { data: filesData } = await supabase
+    .from("gallery_files")
+    .select("*")
+    .eq("gallery_id", galleryId);
+  setFiles(filesData || []);
+}
+
+// Fetch gallery by code
 useEffect(() => {
   if (!code) return;
   let cancelled = false;
@@ -225,14 +233,6 @@ useEffect(() => {
       }
     }
   }, [gallery, showPasswordModal, files.length]);
-
-  async function fetchFiles(galleryId: string) {
-    const { data: filesData } = await supabase
-      .from("gallery_files")
-      .select("*")
-      .eq("gallery_id", galleryId);
-    setFiles(filesData || []);
-  }
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
