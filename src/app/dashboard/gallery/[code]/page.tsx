@@ -120,7 +120,7 @@ export default function GalleryPage() {
     }
     window.addEventListener('click', handleClick);
     return () => window.removeEventListener('click', handleClick);
-  }, [contextMenu.visible]);
+  }, [contextMenu]);
 
   // Fetch gallery by code
   useEffect(() => {
@@ -173,7 +173,7 @@ export default function GalleryPage() {
     }
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
-  }, [code, router, uploading]);
+  }, [code, router, uploading, handleFileUpload]);
 
   // Fetch files when gallery is set and not password protected, or when password modal is closed
   useEffect(() => {
@@ -198,7 +198,7 @@ export default function GalleryPage() {
       const timestamp = Date.now();
       const filePath = `${gallery.code}/${timestamp}_${file.name}`;
       // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("gallery-files")
         .upload(filePath, file, {
           cacheControl: "3600", 
@@ -215,7 +215,7 @@ export default function GalleryPage() {
       // Insert metadata into gallery_files table
       let dbType: 'image' | 'file' | 'folder' = 'file';
       if (file.type && file.type.startsWith('image')) dbType = 'image';
-      const { error: insertError, data: insertData } = await supabase.from("gallery_files").insert({
+      await supabase.from("gallery_files").insert({
         gallery_id: gallery.id, 
         name: file.name,
         type: dbType,
@@ -497,7 +497,7 @@ export default function GalleryPage() {
                                     new window.ClipboardItem({ [blob.type]: blob })
                                   ]);
                                   setToast("Image copied to clipboard!");
-                                } catch (err) {
+                                } catch {
                                   setToast("Failed to copy image");
                                 }
                                 setTimeout(() => setToast(""), 2000);
