@@ -199,7 +199,7 @@ useEffect(() => {
     // Only allow paste if not focused on an input/textarea
     const active = document.activeElement;
     if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
-    let files: File[] = [];
+    const files: File[] = [];
     // Try clipboardData.items first
     if (e.clipboardData && e.clipboardData.items) {
       for (let i = 0; i < e.clipboardData.items.length; i++) {
@@ -224,7 +224,7 @@ useEffect(() => {
   }
   document.addEventListener("paste", handlePaste);
   return () => { cancelled = true; document.removeEventListener("paste", handlePaste); };
-}, [code]);
+}, [code, handleFileUpload, router, uploading]);
 
   // Fetch files when gallery is set and not password protected, or when password modal is closed
   useEffect(() => {
