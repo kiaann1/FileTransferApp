@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
@@ -190,7 +190,7 @@ export default function GalleryPage() {
     setFiles(filesData || []);
   }
 
-  async function handleFileUpload(filesList: File[] | FileList) {
+  const handleFileUpload = useCallback(async (filesList: File[] | FileList) => {
     if (!gallery) return;
     setUploading(true);
     for (let i = 0; i < filesList.length; i++) {
@@ -224,7 +224,7 @@ export default function GalleryPage() {
     }
     setUploading(false);
     fetchFiles(gallery.id);
-  }
+  }, [gallery]);
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
