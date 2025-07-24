@@ -194,29 +194,29 @@ useEffect(() => {
   };
   fetchGallery();
   // Paste handler for images
-  function handlePaste(e: ClipboardEvent): void {
+  async function handlePaste(e: ClipboardEvent) {
     if (uploading) return;
     // Only allow paste if not focused on an input/textarea
     const active = document.activeElement;
     if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
     if (e.clipboardData) {
-      let found = false;
+      const files: File[] = [];
       const items = e.clipboardData.items;
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        if (item.kind === "file" && (item.type === "image/png" || item.type === "image/jpeg" || item.type.startsWith("image"))) {
+        if (item.kind === "file") {
           const file = item.getAsFile();
-          if (file) {
-            handleFileUpload([file]);
-            e.preventDefault();
-            found = true;
-            break;
-          }
+          if (file) files.push(file);
         }
       }
+      if (files.length > 0) {
+        await handleFileUpload(files);
+        e.preventDefault();
+        return;
+      }
       // Fallback: check clipboardData.files (for some browsers)
-      if (!found && e.clipboardData.files && e.clipboardData.files.length > 0) {
-        handleFileUpload(e.clipboardData.files);
+      if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+        await handleFileUpload(e.clipboardData.files);
         e.preventDefault();
       }
     }
