@@ -97,7 +97,7 @@ export default function HomePage() {
           <Link href="/terms" className="text-gray-500 hover:text-blue-600">Terms of Service</Link>
           <Link href="/contact" className="text-gray-500 hover:text-blue-600">Contact</Link>
         </div>
-        <div className="text-gray-400 text-sm">© {new Date().getFullYear()} FileTransfer. All rights reserved.</div>
+        <div className="text-gray-400 text-sm">© {new Date().getFullYear()} All rights reserved.</div>
       </footer>
     </main>
   );
