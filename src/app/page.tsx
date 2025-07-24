@@ -1,9 +1,19 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function HomePage() {
   const [loggedIn, setLoggedIn] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setLoggedIn(false);
+    router.push("/");
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center">
       {/* Navbar */}
@@ -20,6 +30,12 @@ export default function HomePage() {
             <>
               <Link href="/dashboard" className="px-4 py-2 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 transition">Dashboard</Link>
               <Link href="/account" className="px-4 py-2 rounded bg-gray-100 text-blue-700 font-medium hover:bg-gray-200 transition">Account</Link>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 rounded bg-red-500 text-white font-medium hover:bg-red-600 transition"
+              >
+                Logout
+              </button>
             </>
           ) : (
             <Link href="/login" className="px-4 py-2 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 transition">Sign In</Link>
