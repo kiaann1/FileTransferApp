@@ -68,6 +68,9 @@ export default function DashboardPage() {
   const [galleryName, setGalleryName] = useState("");
   const [galleryPassword, setGalleryPassword] = useState("");
   const [galleryInvites, setGalleryInvites] = useState("");
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState("");
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
@@ -126,16 +129,24 @@ export default function DashboardPage() {
               <div className="text-gray-800">Signed in as <span className="font-semibold text-gray-900">{user.email}</span></div>
             )}
           </div>
-          {/* Notification bell for team invites */}
-          <div className="relative">
-            <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition focus:outline-none" aria-label="Team Invites">
-              {/* Bell SVG */}
-              <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><path d="M14 25c1.657 0 3-1.343 3-3h-6c0 1.657 1.343 3 3 3zm7-7V12c0-3.314-2.686-6-6-6S9 8.686 9 12v6l-2 2v1h16v-1l-2-2z" fill="#2563EB"/></svg>
-              {/* Notification badge if invites exist */}
-      {/* Uncomment and use invites array when implemented */}
-      {/* {invites.length > 0 && (
-        <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
-      )} */}
+          <div className="flex gap-4 items-center">
+            {/* Notification bell for team invites */}
+            <div className="relative">
+              <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition focus:outline-none" aria-label="Team Invites">
+                {/* Bell SVG */}
+                <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><path d="M14 25c1.657 0 3-1.343 3-3h-6c0 1.657 1.343 3 3 3zm7-7V12c0-3.314-2.686-6-6-6S9 8.686 9 12v6l-2 2v1h16v-1l-2-2z" fill="#2563EB"/></svg>
+                {/* Notification badge if invites exist */}
+                {/* {invites.length > 0 && (
+                  <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
+                )} */}
+              </button>
+            </div>
+            {/* Join with Code Button */}
+            <button
+              className="px-4 py-2 rounded-xl bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
+              onClick={() => setShowJoinModal(true)}
+            >
+              Join with Code
             </button>
           </div>
         </div>
@@ -143,14 +154,67 @@ export default function DashboardPage() {
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900">Your Galleries</h2>
-            <button
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
-              onClick={() => setShowModal(true)}
-            >
-              <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="9" y="4" width="2" height="12" rx="1" fill="white"/><rect x="4" y="9" width="12" height="2" rx="1" fill="white"/></svg>
-              Create Gallery
-            </button>
+            <div className="flex gap-2">
+              <button
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
+                onClick={() => setShowModal(true)}
+              >
+                <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="9" y="4" width="2" height="12" rx="1" fill="white"/><rect x="4" y="9" width="12" height="2" rx="1" fill="white"/></svg>
+                Create Gallery
+              </button>
+              <button
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
+                onClick={() => setShowJoinModal(true)}
+              >
+                <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="9" y="4" width="2" height="12" rx="1" fill="white"/><rect x="4" y="9" width="12" height="2" rx="1" fill="white"/></svg>
+                Join with Code
+              </button>
+            </div>
           </div>
+        {/* Join with Code Modal */}
+        {showJoinModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => { setShowJoinModal(false); setJoinCode(""); setJoinError(""); }}>
+            <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative" onClick={e => e.stopPropagation()}>
+              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl" onClick={() => { setShowJoinModal(false); setJoinCode(""); setJoinError(""); }} aria-label="Close">&times;</button>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Join Gallery by Code</h2>
+              <form onSubmit={async e => {
+                e.preventDefault();
+                setJoinError("");
+                if (!joinCode.trim() || !user?.id) {
+                  setJoinError("Please enter a valid code.");
+                  return;
+                }
+                // Check if gallery exists
+                const { data: galleryData, error } = await supabase
+                  .from("galleries")
+                  .select("id, code")
+                  .eq("code", joinCode.trim())
+                  .single();
+                if (error || !galleryData) {
+                  setJoinError("Gallery not found.");
+                  return;
+                }
+                // Add user to gallery_members
+                await supabase.from("gallery_members").insert({
+                  gallery_id: galleryData.id,
+                  user_id: user.id,
+                });
+                setShowJoinModal(false);
+                setJoinCode("");
+                setJoinError("");
+                // Optionally refresh galleries list
+                router.push(`/dashboard/gallery/${galleryData.code}`);
+              }} className="flex flex-col gap-4">
+                <label className="flex flex-col gap-1">
+                  <span className="font-medium text-gray-800">Gallery Code</span>
+                  <input type="text" value={joinCode} onChange={e => setJoinCode(e.target.value)} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-black" placeholder="Enter gallery code" autoFocus />
+                </label>
+                {joinError && <div className="text-red-600 text-sm">{joinError}</div>}
+                <button type="submit" className="mt-4 px-6 py-3 rounded-xl bg-green-600 text-white text-lg font-semibold shadow hover:bg-green-700 transition">Join Gallery</button>
+              </form>
+            </div>
+          </div>
+        )}
           {galleries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
               <span className="text-gray-500 mb-4">No galleries yet.</span>
