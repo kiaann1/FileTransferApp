@@ -106,11 +106,6 @@ export default function DashboardPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [inviteEmails, setInviteEmails] = useState("");
   const [resetPasswordFields, setResetPasswordFields] = useState({ current: "", new: "", confirm: "" });
-  // Add internal sign up modal state
-  const [showSignUpModal, setShowSignUpModal] = useState(false);
-  const [signUpEmail, setSignUpEmail] = useState("");
-  const [signUpPassword, setSignUpPassword] = useState("");
-  const [signUpError, setSignUpError] = useState("");
 
   // Add notification state
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
@@ -483,13 +478,6 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
-        {/* Recent activity */}
-        <section>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="bg-gray-50 rounded-xl shadow p-4 sm:p-6">
-            <div className="text-gray-700">No recent activity.</div>
-          </div>
-        </section>
         {/* Gallery Creation Modal */}
         {showModal && (
           <div
@@ -623,53 +611,6 @@ export default function DashboardPage() {
                 >
                   Create Gallery
                 </button>
-              </form>
-            </div>
-          </div>
-        )}
-        {/* Sign Up Modal */}
-        {showSignUpModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => { setShowSignUpModal(false); setSignUpEmail(""); setSignUpPassword(""); setSignUpError(""); }}>
-            <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative" onClick={e => e.stopPropagation()}>
-              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl" onClick={() => { setShowSignUpModal(false); setSignUpEmail(""); setSignUpPassword(""); setSignUpError(""); }} aria-label="Close">&times;</button>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Sign Up</h2>
-              <form onSubmit={async e => {
-                e.preventDefault();
-                setSignUpError("");
-                if (!signUpEmail.trim() || !signUpPassword.trim()) {
-                  setSignUpError("Please enter a valid email and password.");
-                  return;
-                }
-                // Sign up with Supabase auth
-                const { data, error } = await supabase.auth.signUp({
-                  email: signUpEmail.trim(),
-                  password: signUpPassword.trim(),
-                });
-                if (error) {
-                  setSignUpError(error.message);
-                  return;
-                }
-                // Optionally, add user to your own users table if needed
-                setShowSignUpModal(false);
-                setSignUpEmail("");
-                setSignUpPassword("");
-                setSignUpError("");
-                await Swal.fire({
-                  icon: "success",
-                  title: "Account created!",
-                  text: "Check your email for a confirmation link."
-                });
-              }} className="flex flex-col gap-4">
-                <label className="flex flex-col gap-1">
-                  <span className="font-medium text-gray-800">Email</span>
-                  <input type="email" value={signUpEmail} onChange={e => setSignUpEmail(e.target.value)} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" placeholder="Enter your email" required />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="font-medium text-gray-800">Password</span>
-                  <input type="password" value={signUpPassword} onChange={e => setSignUpPassword(e.target.value)} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" placeholder="Enter your password" required />
-                </label>
-                {signUpError && <div className="text-red-600 text-sm">{signUpError}</div>}
-                <button type="submit" className="mt-4 px-6 py-3 rounded-xl bg-blue-600 text-white text-lg font-semibold shadow hover:bg-blue-700 transition">Sign Up</button>
               </form>
             </div>
           </div>
