@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { supabase } from "@/lib/supabaseClient";
+import jwt from "jsonwebtoken";
 
-export async function POST(req: Request) {
   const { email, password } = await req.json();
   if (!email || !password) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -21,6 +21,18 @@ export async function POST(req: Request) {
   if (!passwordMatch) {
     return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
   }
-  // TODO: Set secure httpOnly cookie/session here
-  return NextResponse.json({ success: true, user: { id: user.id, username: user.username, email: user.email } }, { status: 200 });
+  // Create JWT token
+  const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, process.env.JWT_SECRET || "changeme", { expiresIn: "7d" });
+  // Set httpOnly cookie
+  const response = NextResponse.json({ success: true, user: { id: user.id, username: user.username, email: user.email } }, { status: 200 });
+  response.cookies.set({
+    name: "session",
+    value: token,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7 // 7 days
+  });
+  return response;
 }
