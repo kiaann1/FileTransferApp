@@ -115,14 +115,19 @@ export default function DashboardPage() {
       // Check for JWT session cookie
       const cookies = document.cookie.split(';').map(c => c.trim());
       const sessionCookie = cookies.find(c => c.startsWith('session='));
+      console.log('[Dashboard] Cookies:', cookies);
+      console.log('[Dashboard] Session cookie:', sessionCookie);
       if (!sessionCookie) {
+        console.log('[Dashboard] No session cookie, redirecting to login');
         router.replace("/login");
         return;
       }
       // Optionally decode JWT for user info (client-side, not secure, but for demo)
       try {
         const token = sessionCookie.split('=')[1];
+        console.log('[Dashboard] JWT token:', token);
         const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('[Dashboard] JWT payload:', payload);
         setUser({
           id: payload.id,
           email: payload.email,
@@ -133,9 +138,11 @@ export default function DashboardPage() {
         });
         // If on login page, redirect to dashboard
         if (window.location.pathname === "/login") {
+          console.log('[Dashboard] On login page, redirecting to dashboard');
           router.replace("/dashboard");
         }
-      } catch {
+      } catch (err) {
+        console.log('[Dashboard] JWT decode error:', err);
         router.replace("/login");
         return;
       }
