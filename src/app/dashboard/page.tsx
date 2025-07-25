@@ -123,7 +123,14 @@ export default function DashboardPage() {
       try {
         const token = sessionCookie.split('=')[1];
         const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser({ id: payload.id, email: payload.email, user_metadata: { username: payload.username } });
+        setUser({
+          id: payload.id,
+          email: payload.email,
+          user_metadata: { username: payload.username },
+          app_metadata: {},
+          aud: "authenticated",
+          created_at: "",
+        });
       } catch {
         router.replace("/login");
         return;
