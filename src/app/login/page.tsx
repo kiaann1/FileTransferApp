@@ -1,25 +1,23 @@
 "use client";
 import { supabase } from "@/lib/supabaseClient";
-// import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginPage() {
-  // const router = useRouter();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Add internal sign up modal state
-  const [showSignUpModal, setShowSignUpModal] = useState(false);
-  const [signUpEmail, setSignUpEmail] = useState("");
-  const [signUpPassword, setSignUpPassword] = useState("");
-  const [signUpError, setSignUpError] = useState("");
-
-  // Add login form state
+  // Add sign up form state
   const [showLoginForm, setShowLoginForm] = useState(true);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginPasswordVisible, setLoginPasswordVisible] = useState(false);
+
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpError, setSignUpError] = useState("");
 
   const handleLogin = async (provider: "google" | "email") => {
     setLoading(true);
@@ -91,9 +89,8 @@ export default function LoginPage() {
                 return;
               }
               // Authorise user (simulate login, you may want to use Supabase auth here)
-              alert("Login successful!");
               setLoading(false);
-              // Redirect or set session here
+              router.replace("/dashboard");
             }} className="flex flex-col gap-4 mt-4">
               <label className="flex flex-col gap-1">
                 <span className="font-medium text-gray-800">Email</span>
@@ -137,12 +134,12 @@ export default function LoginPage() {
                 setLoading(false);
                 return;
               }
-              setShowSignUpModal(false);
               setSignUpEmail("");
               setSignUpPassword("");
               setSignUpError("");
               setLoading(false);
               alert("Account created! You can now log in.");
+              setShowLoginForm(true);
             }} className="flex flex-col gap-4 mt-4">
               <label className="flex flex-col gap-1">
                 <span className="font-medium text-gray-800">Email</span>
@@ -170,47 +167,6 @@ export default function LoginPage() {
           />
         </div>
       </div>
-      {showSignUpModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => { setShowSignUpModal(false); setSignUpEmail(""); setSignUpPassword(""); setSignUpError(""); }}>
-          <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative" onClick={e => e.stopPropagation()}>
-            <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl" onClick={() => { setShowSignUpModal(false); setSignUpEmail(""); setSignUpPassword(""); setSignUpError(""); }} aria-label="Close">&times;</button>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Sign Up</h2>
-            <form onSubmit={async e => {
-              e.preventDefault();
-              setSignUpError("");
-              if (!signUpEmail.trim() || !signUpPassword.trim()) {
-                setSignUpError("Please enter a valid email and password.");
-                return;
-              }
-              // Sign up with Supabase auth
-              const { data, error } = await supabase.auth.signUp({
-                email: signUpEmail.trim(),
-                password: signUpPassword.trim(),
-              });
-              if (error) {
-                setSignUpError(error.message);
-                return;
-              }
-              setShowSignUpModal(false);
-              setSignUpEmail("");
-              setSignUpPassword("");
-              setSignUpError("");
-              alert("Account created! Check your email for a confirmation link.");
-            }} className="flex flex-col gap-4">
-              <label className="flex flex-col gap-1">
-                <span className="font-medium text-gray-800">Email</span>
-                <input type="email" value={signUpEmail} onChange={e => setSignUpEmail(e.target.value)} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" placeholder="Enter your email" required />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="font-medium text-gray-800">Password</span>
-                <input type="password" value={signUpPassword} onChange={e => setSignUpPassword(e.target.value)} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" placeholder="Enter your password" required />
-              </label>
-              {signUpError && <div className="text-red-600 text-sm">{signUpError}</div>}
-              <button type="submit" className="mt-4 px-6 py-3 rounded-xl bg-blue-600 text-white text-lg font-semibold shadow hover:bg-blue-700 transition">Sign Up</button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
