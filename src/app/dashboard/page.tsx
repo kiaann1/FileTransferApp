@@ -99,7 +99,7 @@ export default function DashboardPage() {
   const [joinNeedsPassword, setJoinNeedsPassword] = useState(false);
   const router = useRouter();
   const user = useUser();
-  const [loading, setLoading] = useState(false); // loading is always false now
+  // Removed unused loading state
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [addUsersModal, setAddUsersModal] = useState<{ open: boolean; gallery: Gallery | null }>({ open: false, gallery: null });
   const [resetPasswordModal, setResetPasswordModal] = useState<{ open: boolean; gallery: Gallery | null }>({ open: false, gallery: null });
@@ -110,6 +110,8 @@ export default function DashboardPage() {
 
   // Add notification state
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
+  const [invites, setInvites] = useState<{ id: string; gallery_id: string; gallery_name?: string; invited_by: string }[]>([]);
+  const [activity, setActivity] = useState<{ id: string; message: string; created_at: string }[]>([]);
 
   // Use user from context (provided by layout.tsx)
   // Remove client-side session check
@@ -132,7 +134,6 @@ export default function DashboardPage() {
       }
     })();
   }, [user]);
-
   // Helper to fetch notifications (simulate for now)
   useEffect(() => {
     if (!user) return;
@@ -162,14 +163,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [user]);
 
-  if (loading) {
-    return <div className="p-8">Loading..</div>;
-  }
-
-  // TODO: Fetch invites and activity from Supabase
-  // TODO: Fetch invites and activity from Supabase
-  // const invites = [];
-  // const recentActivity = [];
 
   // Clear notification handler
   const handleClearNotification = async (id: string) => {
@@ -195,21 +188,45 @@ export default function DashboardPage() {
             )}
           </div>
           <div className="flex gap-4 items-center">
-            {/* Notification bell for team invites */}
+            {/* Notification bell for team invites and dropdown */}
             <div className="relative">
               <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition focus:outline-none" aria-label="Team Invites">
                 {/* Bell SVG */}
                 <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><path d="M14 25c1.657 0 3-1.343 3-3h-6c0 1.657 1.343 3 3 3zm7-7V12c0-3.314-2.686-6-6-6S9 8.686 9 12v6l-2 2v1h16v-1l-2-2z" fill="#2563EB"/></svg>
-                {/* Notification badge if notifications exist */}
-                {notifications.length > 0 && (
+                {/* Notification badge if any exist */}
+                {(notifications.length > 0 || invites.length > 0 || activity.length > 0) && (
                   <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
                 )}
               </button>
-              {/* Notifications panel */}
-              {notifications.length > 0 && (
+              {/* Dropdown panel for notifications, invites, activity */}
+              {(notifications.length > 0 || invites.length > 0 || activity.length > 0) && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
                   <div className="p-4 font-bold text-gray-900 border-b">Notifications</div>
                   <ul className="max-h-64 overflow-y-auto">
+                    {/* Invites */}
+                    {invites.length > 0 && (
+                      <li className="px-4 py-2 border-b font-semibold text-blue-700">Team Invites</li>
+                    )}
+                    {invites.map(invite => (
+                      <li key={invite.id} className="flex flex-col px-4 py-2 border-b last:border-b-0">
+                        <span className="text-gray-700">Invited to <span className="font-bold">{invite.gallery_name}</span> by <span className="font-bold">{invite.invited_by}</span></span>
+                        <a href={`/dashboard/gallery/${invite.gallery_id}`} className="text-blue-600 hover:underline text-sm mt-1">View Gallery</a>
+                      </li>
+                    ))}
+                    {/* Activity */}
+                    {activity.length > 0 && (
+                      <li className="px-4 py-2 border-b font-semibold text-green-700">Recent Activity</li>
+                    )}
+                    {activity.map(act => (
+                      <li key={act.id} className="flex flex-col px-4 py-2 border-b last:border-b-0">
+                        <span className="text-gray-700">{act.message}</span>
+                        <span className="text-xs text-gray-400">{new Date(act.created_at).toLocaleString()}</span>
+                      </li>
+                    ))}
+                    {/* Notifications */}
+                    {notifications.length > 0 && (
+                      <li className="px-4 py-2 border-b font-semibold text-red-700">System Notifications</li>
+                    )}
                     {notifications.map(n => (
                       <li key={n.id} className="flex items-center justify-between px-4 py-3 border-b last:border-b-0">
                         <span className="text-gray-700">{n.message}</span>
@@ -240,86 +257,105 @@ export default function DashboardPage() {
               >
                 <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="9" y="4" width="2" height="12" rx="1" fill="white"/><rect x="4" y="9" width="12" height="2" rx="1" fill="white"/></svg>
                 Create Gallery
+                {(notifications.length > 0 || invites.length > 0 || activity.length > 0) && (
+                  <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
+                )}
               </button>
               <button
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
                 onClick={() => setShowJoinModal(true)}
               >
-                <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="9" y="4" width="2" height="12" rx="1" fill="white"/><rect x="4" y="9" width="12" height="2" rx="1" fill="white"/></svg>
-                Join with Code
+                Join Gallery
               </button>
             </div>
           </div>
-        {/* Join with Code Modal */}
+        </section>
+        {/* Join Gallery Modal */}
         {showJoinModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => { setShowJoinModal(false); setJoinCode(""); setJoinError(""); setJoinPassword(""); setJoinNeedsPassword(false); }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => setShowJoinModal(false)}>
             <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative" onClick={e => e.stopPropagation()}>
-              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl" onClick={() => { setShowJoinModal(false); setJoinCode(""); setJoinError(""); setJoinPassword(""); setJoinNeedsPassword(false); }} aria-label="Close">&times;</button>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Join Gallery by Code</h2>
-              <form onSubmit={async e => {
-                e.preventDefault();
-                setJoinError("");
-                if (!joinCode.trim() || !user?.id) {
-                  setJoinError("Please enter a valid code.");
-                  return;
-                }
-                // Check if gallery exists and if it needs a password
-                const { data: galleryData, error } = await supabase
-                  .from("galleries")
-                  .select("id, code, password")
-                  .eq("code", joinCode.trim())
-                  .single();
-                if (error || !galleryData) {
-                  setJoinError("Gallery not found.");
-                  return;
-                }
-                if (galleryData.password) {
-                  // If password required, check it
-                  if (!joinPassword) {
-                    setJoinNeedsPassword(true);
-                    setJoinError("This gallery requires a password.");
+              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowJoinModal(false)} aria-label="Close">&times;</button>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Join Gallery</h2>
+              <form
+                onSubmit={async e => {
+                  e.preventDefault();
+                  setJoinError("");
+                  if (!joinCode.trim() || !user?.id) {
+                    setJoinError("Please enter a valid code.");
                     return;
                   }
-                  if (galleryData.password !== joinPassword) {
-                    setJoinNeedsPassword(true);
-                    setJoinError("Incorrect password.");
+                  // Check if gallery exists and if it needs a password
+                  const { data: galleryData, error } = await supabase
+                    .from("galleries")
+                    .select("id, code, password")
+                    .eq("code", joinCode.trim())
+                    .single();
+                  if (error || !galleryData) {
+                    setJoinError("Gallery not found.");
                     return;
                   }
-                }
-                // Add user to gallery_members
-                await supabase.from("gallery_members").insert({
-                  gallery_id: galleryData.id,
-                  user_id: user.id,
-                });
-                setShowJoinModal(false);
-                setJoinCode("");
-                setJoinError("");
-                setJoinPassword("");
-                setJoinNeedsPassword(false);
-                router.push(`/dashboard/gallery/${galleryData.code}`);
-              }} className="flex flex-col gap-4">
+                  if (galleryData.password) {
+                    // If password required, check it
+                    if (!joinPassword) {
+                      setJoinNeedsPassword(true);
+                      setJoinError("This gallery requires a password.");
+                      return;
+                    }
+                    if (galleryData.password !== joinPassword) {
+                      setJoinNeedsPassword(true);
+                      setJoinError("Incorrect password.");
+                      return;
+                    }
+                  }
+                  // Add user to gallery_members
+                  await supabase.from("gallery_members").insert({
+                    gallery_id: galleryData.id,
+                    user_id: user.id,
+                  });
+                  setShowJoinModal(false);
+                  setJoinCode("");
+                  setJoinError("");
+                  setJoinPassword("");
+                  setJoinNeedsPassword(false);
+                  router.push(`/dashboard/gallery/${galleryData.code}`);
+                }}
+                className="flex flex-col gap-4"
+              >
                 <label className="flex flex-col gap-1">
                   <span className="font-medium text-gray-800">Gallery Code</span>
-                  <input type="text" value={joinCode} onChange={async e => {
-                    setJoinCode(e.target.value);
-                    setJoinError("");
-                    setJoinNeedsPassword(false);
-                    setJoinPassword("");
-                    // Check if gallery needs password as user types
-                    if (e.target.value.trim()) {
-                      const { data: galleryData } = await supabase
-                        .from("galleries")
-                        .select("password")
-                        .eq("code", e.target.value.trim())
-                        .single();
-                      setJoinNeedsPassword(!!(galleryData && galleryData.password));
-                    }
-                  }} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-black" placeholder="Enter gallery code" autoFocus />
+                  <input
+                    type="text"
+                    value={joinCode}
+                    onChange={async e => {
+                      setJoinCode(e.target.value);
+                      setJoinError("");
+                      setJoinNeedsPassword(false);
+                      setJoinPassword("");
+                      // Check if gallery needs password as user types
+                      if (e.target.value.trim()) {
+                        const { data: galleryData } = await supabase
+                          .from("galleries")
+                          .select("password")
+                          .eq("code", e.target.value.trim())
+                          .single();
+                        setJoinNeedsPassword(!!(galleryData && galleryData.password));
+                      }
+                    }}
+                    className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-black"
+                    placeholder="Enter gallery code"
+                    autoFocus
+                  />
                 </label>
                 {joinNeedsPassword && (
                   <label className="flex flex-col gap-1">
                     <span className="font-medium text-gray-800">Gallery Password</span>
-                    <input type="password" value={joinPassword} onChange={e => setJoinPassword(e.target.value)} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-black" placeholder="Enter gallery password" />
+                    <input
+                      type="password"
+                      value={joinPassword}
+                      onChange={e => setJoinPassword(e.target.value)}
+                      className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-black"
+                      placeholder="Enter gallery password"
+                    />
                   </label>
                 )}
                 {joinError && <div className="text-red-600 text-sm">{joinError}</div>}
@@ -356,7 +392,7 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
-        </section>
+        </div>
         {/* Delete Gallery Modal */}
         {deleteModal.open && deleteModal.gallery && (
           <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => { setDeleteModal({ open: false, gallery: null }); setDeleteConfirmText(""); }}>
@@ -610,8 +646,5 @@ export default function DashboardPage() {
               </form>
             </div>
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
+        )}</div>
+      )}
