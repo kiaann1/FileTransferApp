@@ -115,31 +115,42 @@ export default function LoginPage() {
                 return;
               }
               setLoading(true);
-              // Create user in DB
-              const { data: existing } = await supabase
-                .from("users")
-                .select("id")
-                .eq("email", signUpEmail.trim())
-                .single();
-              if (existing) {
-                setSignUpError("Email already registered.");
+              try {
+                // Check if user already exists
+                const { data: existing, error: checkError } = await supabase
+                  .from("users")
+                  .select("id")
+                  .eq("email", signUpEmail.trim())
+                  .single();
+                if (checkError && checkError.code !== 'PGRST116') {
+                  setSignUpError("Error checking user: " + checkError.message);
+                  setLoading(false);
+                  return;
+                }
+                if (existing) {
+                  setSignUpError("Email already registered.");
+                  setLoading(false);
+                  return;
+                }
+                // Insert new user
+                const { error: insertError } = await supabase
+                  .from("users")
+                  .insert([{ email: signUpEmail.trim(), password: signUpPassword.trim() }]);
+                if (insertError) {
+                  setSignUpError("Error creating user: " + insertError.message);
+                  setLoading(false);
+                  return;
+                }
+                setSignUpEmail("");
+                setSignUpPassword("");
+                setSignUpError("");
                 setLoading(false);
-                return;
-              }
-              const { error } = await supabase
-                .from("users")
-                .insert([{ email: signUpEmail.trim(), password: signUpPassword.trim() }]);
-              if (error) {
-                setSignUpError(error.message);
+                alert("Account created! You can now log in.");
+                setShowLoginForm(true);
+              } catch (err) {
+                setSignUpError("Unexpected error: " + (err instanceof Error ? err.message : String(err)));
                 setLoading(false);
-                return;
               }
-              setSignUpEmail("");
-              setSignUpPassword("");
-              setSignUpError("");
-              setLoading(false);
-              alert("Account created! You can now log in.");
-              setShowLoginForm(true);
             }} className="flex flex-col gap-4 mt-4">
               <label className="flex flex-col gap-1">
                 <span className="font-medium text-gray-800">Email</span>
