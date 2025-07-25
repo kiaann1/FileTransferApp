@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { supabase } from "@/lib/supabaseClient";
 import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
-  const { email, password } = await req.json();
+export async function POST(request: Request) {
+  const { email, password } = await request.json();
   if (!email || !password) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
@@ -23,11 +25,9 @@ import jwt from "jsonwebtoken";
   }
   // Create JWT token
   const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, process.env.JWT_SECRET || "changeme", { expiresIn: "7d" });
-  // Set httpOnly cookie
+  // Set httpOnly cookie using Next.js cookies API
   const response = NextResponse.json({ success: true, user: { id: user.id, username: user.username, email: user.email } }, { status: 200 });
-  response.cookies.set({
-    name: "session",
-    value: token,
+  response.cookies.set("session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
