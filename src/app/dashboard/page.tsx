@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import { useUser } from "./layout";
 type Gallery = { id: string; name: string; code: string; password?: string; owner_id: string };
 type GalleryCardProps = {
   gallery: Gallery;
@@ -97,8 +98,8 @@ export default function DashboardPage() {
   const [joinPassword, setJoinPassword] = useState("");
   const [joinNeedsPassword, setJoinNeedsPassword] = useState(false);
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
+  const user = useUser();
+  const [loading, setLoading] = useState(false); // loading is always false now
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [addUsersModal, setAddUsersModal] = useState<{ open: boolean; gallery: Gallery | null }>({ open: false, gallery: null });
   const [resetPasswordModal, setResetPasswordModal] = useState<{ open: boolean; gallery: Gallery | null }>({ open: false, gallery: null });
@@ -110,46 +111,8 @@ export default function DashboardPage() {
   // Add notification state
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
 
-  useEffect(() => {
-    async function checkSession() {
-      // Check for JWT session cookie
-      const cookies = document.cookie.split(';').map(c => c.trim());
-      const sessionCookie = cookies.find(c => c.startsWith('session='));
-      console.log('[Dashboard] Cookies:', cookies);
-      console.log('[Dashboard] Session cookie:', sessionCookie);
-      if (!sessionCookie) {
-        console.log('[Dashboard] No session cookie, redirecting to login');
-        router.replace("/login");
-        return;
-      }
-      // Optionally decode JWT for user info (client-side, not secure, but for demo)
-      try {
-        const token = sessionCookie.split('=')[1];
-        console.log('[Dashboard] JWT token:', token);
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        console.log('[Dashboard] JWT payload:', payload);
-        setUser({
-          id: payload.id,
-          email: payload.email,
-          user_metadata: { username: payload.username },
-          app_metadata: {},
-          aud: "authenticated",
-          created_at: "",
-        });
-        // If on login page, redirect to dashboard
-        if (window.location.pathname === "/login") {
-          console.log('[Dashboard] On login page, redirecting to dashboard');
-          router.replace("/dashboard");
-        }
-      } catch (err) {
-        console.log('[Dashboard] JWT decode error:', err);
-        router.replace("/login");
-        return;
-      }
-      setLoading(false);
-    }
-    checkSession();
-  }, [router]);
+  // Use user from context (provided by layout.tsx)
+  // Remove client-side session check
 
   useEffect(() => {
     if (!user) return;
