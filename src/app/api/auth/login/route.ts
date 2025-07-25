@@ -36,27 +36,30 @@ export async function POST(request: Request) {
       }
     }, { status: 401 });
   }
-  // Always include debug info in success response for troubleshooting
-  return NextResponse.json({
-    success: true,
-    user: { id: user.id, username: user.username, email: user.email },
-    debug: {
-      attemptedPassword: password,
-      storedHash: user.password,
-      bcryptCompareResult: passwordMatch,
-      user: user
-    }
-  }, { status: 200 });
-  // Create JWT token
-  const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, process.env.JWT_SECRET || "changeme", { expiresIn: "7d" });
-  // Set httpOnly cookie using Next.js cookies API
-  const response = NextResponse.json({ success: true, user: { id: user.id, username: user.username, email: user.email } }, { status: 200 });
-  response.cookies.set("session", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7 // 7 days
-  });
-  return response;
+  // Only proceed if user is not null
+  if (user) {
+    // Create JWT token
+    const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, process.env.JWT_SECRET || "changeme", { expiresIn: "7d" });
+    // Set httpOnly cookie using Next.js cookies API
+    const response = NextResponse.json({
+      success: true,
+      user: { id: user.id, username: user.username, email: user.email },
+      debug: {
+        attemptedPassword: password,
+        storedHash: user.password,
+        bcryptCompareResult: passwordMatch,
+        user: user
+      }
+    }, { status: 200 });
+    response.cookies.set("session", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    });
+    return response;
+  } else {
+    return NextResponse.json({ success: false, error: "User not found after login." }, { status: 401 });
+  }
 }
