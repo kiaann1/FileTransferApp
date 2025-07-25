@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import bcrypt from "bcryptjs";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -83,12 +84,13 @@ export default function LoginPage() {
                 setLoading(false);
                 return;
               }
-              if (userData.password !== loginPassword.trim()) {
+              // Compare hashed password
+              const passwordMatch = await bcrypt.compare(loginPassword.trim(), userData.password);
+              if (!passwordMatch) {
                 setLoginError("Incorrect password.");
                 setLoading(false);
                 return;
               }
-              // Authorise user (simulate login, you may want to use Supabase auth here)
               setLoading(false);
               router.replace("/dashboard");
             }} className="flex flex-col gap-4 mt-4">
@@ -132,10 +134,12 @@ export default function LoginPage() {
                   setLoading(false);
                   return;
                 }
+                // Hash password before storing
+                const hashedPassword = await bcrypt.hash(signUpPassword.trim(), 10);
                 // Insert new user
                 const { error: insertError } = await supabase
                   .from("users")
-                  .insert([{ email: signUpEmail.trim(), password: signUpPassword.trim() }]);
+                  .insert([{ email: signUpEmail.trim(), password: hashedPassword }]);
                 if (insertError) {
                   setSignUpError("Error creating user: " + insertError.message);
                   setLoading(false);
@@ -145,8 +149,21 @@ export default function LoginPage() {
                 setSignUpPassword("");
                 setSignUpError("");
                 setLoading(false);
-                alert("Account created! You can now log in.");
+                // Automatically log in the user
+                setLoginEmail(signUpEmail.trim());
+                setLoginPassword(signUpPassword.trim());
                 setShowLoginForm(true);
+                // Simulate login and route
+                const { data: userData, error: loginError } = await supabase
+                  .from("users")
+                  .select("id, email, password")
+                  .eq("email", signUpEmail.trim())
+                  .single();
+                if (!loginError && userData && await bcrypt.compare(signUpPassword.trim(), userData.password)) {
+                  router.replace("/dashboard");
+                  return;
+                }
+                setSignUpError("Account created, but automatic login failed. Please log in manually.");
               } catch (err) {
                 setSignUpError("Unexpected error: " + (err instanceof Error ? err.message : String(err)));
                 setLoading(false);
