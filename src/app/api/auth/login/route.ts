@@ -11,31 +11,16 @@ export async function POST(request: Request) {
     console.log("[LOGIN] Missing fields:", { email, password });
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
-  // Try both 'users' and 'auth.users' tables for flexibility
-  let user = null;
-  let userError = null;
-  let triedTable = "users";
-  let result = await supabase
+  // Query only the 'users' table
+  const { data: user, error: userError } = await supabase
     .from("users")
     .select("id, email, password, username")
     .eq("email", email)
     .single();
-  user = result.data;
-  userError = result.error;
-  if (!user) {
-    triedTable = "auth.users";
-    result = await supabase
-      .from("auth.users")
-      .select("id, email, encrypted_password as password, raw_user_meta_data as username")
-      .eq("email", email)
-      .single();
-    user = result.data;
-    userError = result.error;
-  }
-  console.log("[LOGIN] Supabase query result:", { user, userError, triedTable });
+  console.log("[LOGIN] Supabase query result:", { user, userError });
   if (userError || !user) {
-    console.error("[LOGIN] User not found or error:", { userError, user, triedTable });
-    return NextResponse.json({ error: "User not found.", debug: { email, userError, user, triedTable } }, { status: 404 });
+    console.error("[LOGIN] User not found or error:", { userError, user });
+    return NextResponse.json({ error: "User not found.", debug: { email, userError, user } }, { status: 404 });
   }
   // Compare password
   console.log("[LOGIN] Comparing password:", password, "with hash:", user.password);
