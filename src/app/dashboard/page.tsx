@@ -548,9 +548,9 @@ export default function DashboardPage() {
                     return code;
                   }
                   try {
-                    // Check if user exists in referenced users table
+                    // Check if user exists in referenced table (id)
                     const { data: userExists, error: userError } = await supabase
-                      .from("users")
+                      .from("id")
                       .select("id")
                       .eq("id", user.id)
                       .single();
@@ -558,7 +558,7 @@ export default function DashboardPage() {
                       await Swal.fire({
                         icon: "error",
                         title: "User not found",
-                        text: "Your user account does not exist in the users table. Please contact support."
+                        text: "Your user account does not exist in the id table. Please contact support."
                       });
                       return;
                     }
