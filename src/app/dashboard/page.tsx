@@ -177,99 +177,91 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      <div className="max-w-6xl mx-auto py-6 px-2 sm:px-4 md:px-6 lg:px-6">
-        {/* Welcome header */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+      <div className="max-w-7xl mx-auto py-10 px-4">
+        {/* SaaS-style header */}
+        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10 border-b pb-6">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome to your Dashboard</h1>
+            <h1 className="text-4xl font-extrabold text-blue-900 mb-2 tracking-tight">Dashboard</h1>
             {user && (
-              <div className="text-gray-800">Signed in as <span className="font-semibold text-gray-900">{user.email}</span></div>
+              <div className="text-gray-700">Signed in as <span className="font-semibold text-blue-900">{user.email}</span></div>
             )}
           </div>
           <div className="flex gap-4 items-center">
             {/* Notification bell for team invites and dropdown */}
             <div className="relative">
-              <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition focus:outline-none" aria-label="Team Invites">
+              <button className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition focus:outline-none shadow" aria-label="Team Invites">
                 {/* Bell SVG */}
                 <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><path d="M14 25c1.657 0 3-1.343 3-3h-6c0 1.657 1.343 3 3 3zm7-7V12c0-3.314-2.686-6-6-6S9 8.686 9 12v6l-2 2v1h16v-1l-2-2z" fill="#2563EB"/></svg>
-                {/* Notification badge if any exist */}
                 {(notifications.length > 0 || invites.length > 0 || activity.length > 0) && (
                   <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
                 )}
               </button>
-              {/* Dropdown panel for notifications, invites, activity */}
-              {(notifications.length > 0 || invites.length > 0 || activity.length > 0) && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
-                  <div className="p-4 font-bold text-gray-900 border-b">Notifications</div>
-                  <ul className="max-h-64 overflow-y-auto">
-                    {/* Invites */}
-                    {invites.length > 0 && (
-                      <li className="px-4 py-2 border-b font-semibold text-blue-700">Team Invites</li>
-                    )}
-                    {invites.map(invite => (
-                      <li key={invite.id} className="flex flex-col px-4 py-2 border-b last:border-b-0">
-                        <span className="text-gray-700">Invited to <span className="font-bold">{invite.gallery_name}</span> by <span className="font-bold">{invite.invited_by}</span></span>
-                        <a href={`/dashboard/gallery/${invite.gallery_id}`} className="text-blue-600 hover:underline text-sm mt-1">View Gallery</a>
-                      </li>
-                    ))}
-                    {/* Activity */}
-                    {activity.length > 0 && (
-                      <li className="px-4 py-2 border-b font-semibold text-green-700">Recent Activity</li>
-                    )}
-                    {activity.map(act => (
-                      <li key={act.id} className="flex flex-col px-4 py-2 border-b last:border-b-0">
-                        <span className="text-gray-700">{act.message}</span>
-                        <span className="text-xs text-gray-400">{new Date(act.created_at).toLocaleString()}</span>
-                      </li>
-                    ))}
-                    {/* Notifications */}
-                    {notifications.length > 0 && (
-                      <li className="px-4 py-2 border-b font-semibold text-red-700">System Notifications</li>
-                    )}
-                    {notifications.map(n => (
-                      <li key={n.id} className="flex items-center justify-between px-4 py-3 border-b last:border-b-0">
-                        <span className="text-gray-700">{n.message}</span>
-                        <button className="ml-2 text-gray-400 hover:text-red-600 text-lg font-bold" onClick={() => handleClearNotification(n.id)} aria-label="Clear notification">×</button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                <div className="p-4 font-bold text-blue-900 border-b">Notifications</div>
+                <ul className="max-h-64 overflow-y-auto">
+                  {invites.length > 0 && (
+                    <li className="px-4 py-2 border-b font-semibold text-blue-700">Team Invites</li>
+                  )}
+                  {invites.map(invite => (
+                    <li key={invite.id} className="flex flex-col px-4 py-2 border-b last:border-b-0">
+                      <span className="text-gray-700">Invited to <span className="font-bold">{invite.gallery_name}</span> by <span className="font-bold">{invite.invited_by}</span></span>
+                      <a href={`/dashboard/gallery/${invite.gallery_id}`} className="text-blue-600 hover:underline text-sm mt-1">View Gallery</a>
+                    </li>
+                  ))}
+                  {activity.length > 0 && (
+                    <li className="px-4 py-2 border-b font-semibold text-green-700">Recent Activity</li>
+                  )}
+                  {activity.map(act => (
+                    <li key={act.id} className="flex flex-col px-4 py-2 border-b last:border-b-0">
+                      <span className="text-gray-700">{act.message}</span>
+                      <span className="text-xs text-gray-400">{new Date(act.created_at).toLocaleString()}</span>
+                    </li>
+                  ))}
+                  {notifications.length > 0 && (
+                    <li className="px-4 py-2 border-b font-semibold text-red-700">System Notifications</li>
+                  )}
+                  {notifications.map(n => (
+                    <li key={n.id} className="flex items-center justify-between px-4 py-3 border-b last:border-b-0">
+                      <span className="text-gray-700">{n.message}</span>
+                      <button className="ml-2 text-gray-400 hover:text-red-600 text-lg font-bold" onClick={() => handleClearNotification(n.id)} aria-label="Clear notification">×</button>
+                    </li>
+                  ))}
+                  {notifications.length === 0 && invites.length === 0 && activity.length === 0 && (
+                    <li className="px-4 py-8 text-center text-gray-400">No notifications</li>
+                  )}
+                </ul>
+              </div>
             </div>
-            {/* Logout button */}
             <button
-              className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition"
+              className="px-5 py-2 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition"
               onClick={handleLogout}
             >
               Logout
             </button>
           </div>
-        </div>
+        </header>
         {/* Gallery list with create button */}
-        <section className="mb-10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Your Galleries</h2>
+        <section className="mb-12">
+        </section>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="text-2xl font-bold text-blue-900">Your Galleries</h2>
             <div className="flex gap-2 flex-wrap">
               <button
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
                 onClick={() => setShowModal(true)}
               >
                 <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="9" y="4" width="2" height="12" rx="1" fill="white"/><rect x="4" y="9" width="12" height="2" rx="1" fill="white"/></svg>
                 Create Gallery
-                {(notifications.length > 0 || invites.length > 0 || activity.length > 0) && (
-                  <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
-                )}
               </button>
               <button
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
                 onClick={() => setShowJoinModal(true)}
               >
                 Join Gallery
               </button>
             </div>
           </div>
-        </section>
         {/* Join Gallery Modal */}
         {showJoinModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => setShowJoinModal(false)}>
