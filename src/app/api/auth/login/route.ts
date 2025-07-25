@@ -6,7 +6,9 @@ import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   const { email, password } = await request.json();
+  console.log("[LOGIN] Incoming email:", email);
   if (!email || !password) {
+    console.log("[LOGIN] Missing fields:", { email, password });
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
   // Get user
@@ -15,10 +17,10 @@ export async function POST(request: Request) {
     .select("id, email, password, username")
     .eq("email", email)
     .single();
-  console.log("[LOGIN] email:", email, "password:", password, "user:", user);
+  console.log("[LOGIN] Supabase query result:", { user, userError });
   if (userError || !user) {
-    console.error("[LOGIN] User not found or error:", userError);
-    return NextResponse.json({ error: "User not found." }, { status: 404 });
+    console.error("[LOGIN] User not found or error:", { userError, user });
+    return NextResponse.json({ error: "User not found.", debug: { email, userError, user } }, { status: 404 });
   }
   // Compare password
   console.log("[LOGIN] Comparing password:", password, "with hash:", user.password);
