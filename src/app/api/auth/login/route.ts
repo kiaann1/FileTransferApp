@@ -1,20 +1,26 @@
-// Only allow POST requests; return 405 for others
-export async function GET() {
-  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
-}
 
-export async function PUT() {
-  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
-}
-
-export async function DELETE() {
-  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
-}
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { supabase } from "@/lib/supabaseClient";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
+
+// Only allow POST requests; return 405 for all others
+export async function GET() {
+  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
+}
+export async function PUT() {
+  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
+}
+export async function DELETE() {
+  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
+}
+export async function PATCH() {
+  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
+}
+export async function OPTIONS() {
+  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
+}
 
 export async function POST(request: Request) {
   const { email, password } = await request.json();
