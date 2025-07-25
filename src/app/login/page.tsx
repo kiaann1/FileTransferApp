@@ -111,7 +111,8 @@ export default function LoginPage() {
             <form onSubmit={async e => {
               e.preventDefault();
               setLoginError("");
-              if (!loginEmail.trim() || !loginPassword.trim()) {
+              const normalizedEmail = loginEmail.trim().toLowerCase();
+              if (!normalizedEmail || !loginPassword.trim()) {
                 setLoginError("Please enter your email and password.");
                 return;
               }
@@ -120,7 +121,7 @@ export default function LoginPage() {
                 const res = await fetch("/api/auth/login", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword.trim() })
+                  body: JSON.stringify({ email: normalizedEmail, password: loginPassword.trim() })
                 });
                 let result: { error?: string } = {};
                 try {
