@@ -18,21 +18,22 @@ import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   const { email, password } = await request.json();
-  console.log("[LOGIN] Incoming email:", email);
-  if (!email || !password) {
-    console.log("[LOGIN] Missing fields:", { email, password });
+  const normalizedEmail = email ? email.trim().toLowerCase() : "";
+  console.log("[LOGIN] Incoming email:", normalizedEmail);
+  if (!normalizedEmail || !password) {
+    console.log("[LOGIN] Missing fields:", { normalizedEmail, password });
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
-  // Query only the 'users' table
+  // Query only the 'users' table, case-insensitive
   const { data: user, error: userError } = await supabase
     .from("users")
     .select("id, email, password, username")
-    .eq("email", email)
+    .eq("email", normalizedEmail)
     .single();
   console.log("[LOGIN] Supabase query result:", { user, userError });
   if (userError || !user) {
     console.error("[LOGIN] User not found or error:", { userError, user });
-    return NextResponse.json({ error: "User not found.", debug: { email, userError, user } }, { status: 404 });
+    return NextResponse.json({ error: "User not found.", debug: { normalizedEmail, userError, user } }, { status: 404 });
   }
   // Compare password
   console.log("[LOGIN] Comparing password:", password, "with hash:", user.password);
@@ -62,7 +63,8 @@ export async function POST(request: Request) {
         attemptedPassword: password,
         storedHash: user.password,
         bcryptCompareResult: passwordMatch,
-        user: user
+        user: user,
+        cookieSet: true
       }
     }, { status: 200 });
     response.cookies.set("session", token, {
@@ -72,6 +74,7 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: 60 * 60 * 24 * 7 // 7 days
     });
+    console.log("[LOGIN] Session cookie set for user:", user.email);
     return response;
   } else {
     return NextResponse.json({ success: false, error: "User not found after login." }, { status: 401 });

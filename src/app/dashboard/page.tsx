@@ -131,6 +131,10 @@ export default function DashboardPage() {
           aud: "authenticated",
           created_at: "",
         });
+        // If on login page, redirect to dashboard
+        if (window.location.pathname === "/login") {
+          router.replace("/dashboard");
+        }
       } catch {
         router.replace("/login");
         return;
