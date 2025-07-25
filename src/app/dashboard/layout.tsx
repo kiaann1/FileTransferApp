@@ -1,3 +1,4 @@
+import React from "react";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { redirect } from "next/navigation";
@@ -29,13 +30,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login");
   }
 
-  // Pass user as prop to children via context
+  // Pass user as prop to children
   return (
-    <UserContextProvider user={user}>
+    <>
       {children}
-    </UserContextProvider>
+    </>
   );
 }
 
-// Context provider for user
-import { UserContextProvider } from "./user-context";
