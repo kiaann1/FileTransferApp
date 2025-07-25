@@ -1,7 +1,7 @@
 "use client";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import bcrypt from "bcryptjs";
 
 export default function LoginPage() {
@@ -34,7 +34,7 @@ export default function LoginPage() {
     setCaptchaInput("");
   }
   // Generate captcha on mount and when switching to sign up
-  React.useEffect(() => {
+  useEffect(() => {
     if (!showLoginForm) generateCaptcha();
   }, [showLoginForm]);
   // Add password strength state
