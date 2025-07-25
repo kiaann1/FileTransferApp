@@ -111,11 +111,26 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
+    async function checkSession() {
+      // Check for JWT session cookie
+      const cookies = document.cookie.split(';').map(c => c.trim());
+      const sessionCookie = cookies.find(c => c.startsWith('session='));
+      if (!sessionCookie) {
+        router.replace("/login");
+        return;
+      }
+      // Optionally decode JWT for user info (client-side, not secure, but for demo)
+      try {
+        const token = sessionCookie.split('=')[1];
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUser({ id: payload.id, email: payload.email, user_metadata: { username: payload.username } });
+      } catch {
+        router.replace("/login");
+        return;
+      }
       setLoading(false);
-      if (!data.user) router.replace("/login");
-    });
+    }
+    checkSession();
   }, [router]);
 
   useEffect(() => {

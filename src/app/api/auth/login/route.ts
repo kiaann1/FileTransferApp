@@ -26,8 +26,27 @@ export async function POST(request: Request) {
   console.log("[LOGIN] Password match:", passwordMatch);
   if (!passwordMatch) {
     console.error("[LOGIN] Incorrect password for email:", email);
-    return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
+    return NextResponse.json({
+      error: "Incorrect password.",
+      debug: {
+        attemptedPassword: password,
+        storedHash: user.password,
+        bcryptCompareResult: passwordMatch,
+        user: user
+      }
+    }, { status: 401 });
   }
+  // Always include debug info in success response for troubleshooting
+  return NextResponse.json({
+    success: true,
+    user: { id: user.id, username: user.username, email: user.email },
+    debug: {
+      attemptedPassword: password,
+      storedHash: user.password,
+      bcryptCompareResult: passwordMatch,
+      user: user
+    }
+  }, { status: 200 });
   // Create JWT token
   const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, process.env.JWT_SECRET || "changeme", { expiresIn: "7d" });
   // Set httpOnly cookie using Next.js cookies API
