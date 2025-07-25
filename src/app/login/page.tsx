@@ -131,12 +131,12 @@ export default function LoginPage() {
                   result = {};
                 }
                 if (!res.ok) {
-                  setLoginError(result.error || "Login failed.");
-                  setLoading(false);
-                  return;
-                }
+                setLoginError(result.error || "Login failed.");
                 setLoading(false);
-                router.replace("/dashboard");
+                return;
+              }
+              setLoading(false);
+              window.location.href = "/dashboard";
               } catch (err) {
                 setLoginError("Unexpected error: " + (err instanceof Error ? err.message : String(err)));
                 setLoading(false);
