@@ -128,7 +128,7 @@ export default function LoginPage() {
               }
               const { error } = await supabase
                 .from("users")
-                .insert({ email: signUpEmail.trim(), password: signUpPassword.trim() });
+                .insert([{ email: signUpEmail.trim(), password: signUpPassword.trim() }]);
               if (error) {
                 setSignUpError(error.message);
                 setLoading(false);
