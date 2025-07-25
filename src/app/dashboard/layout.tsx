@@ -1,3 +1,4 @@
+import { UserContextProvider } from "./user-context";
 import React from "react";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
@@ -32,9 +33,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   // Pass user as prop to children
   return (
-    <>
+    <UserContextProvider user={user}>
       {children}
-    </>
+    </UserContextProvider>
   );
 }
 
