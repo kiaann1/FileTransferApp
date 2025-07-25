@@ -122,7 +122,13 @@ export default function LoginPage() {
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword.trim() })
                 });
-                const result = await res.json();
+                let result: { error?: string } = {};
+                try {
+                  const text = await res.text();
+                  result = text ? JSON.parse(text) : {};
+                } catch (jsonErr) {
+                  result = {};
+                }
                 if (!res.ok) {
                   setLoginError(result.error || "Login failed.");
                   setLoading(false);
@@ -182,7 +188,13 @@ export default function LoginPage() {
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ username: signUpUsername.trim(), email: signUpEmail.trim(), password: signUpPassword.trim() })
                 });
-                const result = await res.json();
+                let result: { error?: string } = {};
+                try {
+                  const text = await res.text();
+                  result = text ? JSON.parse(text) : {};
+                } catch (jsonErr) {
+                  result = {};
+                }
                 if (!res.ok) {
                   setSignUpError(result.error || "Sign up failed.");
                   setLoading(false);
@@ -194,7 +206,13 @@ export default function LoginPage() {
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ email: signUpEmail.trim(), password: signUpPassword.trim() })
                 });
-                const loginResult = await loginRes.json();
+                let loginResult: { error?: string } = {};
+                try {
+                  const loginText = await loginRes.text();
+                  loginResult = loginText ? JSON.parse(loginText) : {};
+                } catch (jsonErr) {
+                  loginResult = {};
+                }
                 if (!loginRes.ok) {
                   setSignUpError("Account created, but automatic login failed. Please log in manually.");
                   setLoading(false);
