@@ -548,6 +548,20 @@ export default function DashboardPage() {
                     return code;
                   }
                   try {
+                    // Check if user exists in referenced users table
+                    const { data: userExists, error: userError } = await supabase
+                      .from("users")
+                      .select("id")
+                      .eq("id", user.id)
+                      .single();
+                    if (userError || !userExists) {
+                      await Swal.fire({
+                        icon: "error",
+                        title: "User not found",
+                        text: "Your user account does not exist in the users table. Please contact support."
+                      });
+                      return;
+                    }
                     // 1. Generate a unique code (retry if collision)
                     let code = '';
                     let codeExists = true;
@@ -603,11 +617,11 @@ export default function DashboardPage() {
                     setGalleryInvites("");
                     router.push(`/dashboard/gallery/${newGallery.code}`);
                   } catch (err) {
-                  await Swal.fire({
-                    icon: "error",
-                    title: "Failed to create gallery",
-                    text: err instanceof Error ? err.message : "Unknown error"
-                  });
+                    await Swal.fire({
+                      icon: "error",
+                      title: "Failed to create gallery",
+                      text: err instanceof Error ? err.message : "Unknown error"
+                    });
                   }
                 }}
                 className="flex flex-col gap-4"
