@@ -19,7 +19,24 @@ export default function LoginPage() {
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpError, setSignUpError] = useState("");
+  const [signUpUsername, setSignUpUsername] = useState("");
+  const [signUpPasswordConfirm, setSignUpPasswordConfirm] = useState("");
+  const [captchaInput, setCaptchaInput] = useState("");
+  const [captchaQuestion, setCaptchaQuestion] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
 
+  // Generate a simple captcha (math question)
+  function generateCaptcha() {
+    const a = Math.floor(Math.random() * 10) + 1;
+    const b = Math.floor(Math.random() * 10) + 1;
+    setCaptchaQuestion(`What is ${a} + ${b}?`);
+    setCaptchaAnswer(String(a + b));
+    setCaptchaInput("");
+  }
+  // Generate captcha on mount and when switching to sign up
+  React.useEffect(() => {
+    if (!showLoginForm) generateCaptcha();
+  }, [showLoginForm]);
   // Add password strength state
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordStrengthLabel, setPasswordStrengthLabel] = useState("");
@@ -99,26 +116,24 @@ export default function LoginPage() {
                 return;
               }
               setLoading(true);
-              // Check if user exists and password matches
-              const { data: userData, error } = await supabase
-                .from("users")
-                .select("id, email, password")
-                .eq("email", loginEmail.trim())
-                .single();
-              if (error || !userData) {
-                setLoginError("User not found.");
+              try {
+                const res = await fetch("/api/auth/login", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword.trim() })
+                });
+                const result = await res.json();
+                if (!res.ok) {
+                  setLoginError(result.error || "Login failed.");
+                  setLoading(false);
+                  return;
+                }
                 setLoading(false);
-                return;
-              }
-              // Compare hashed password
-              const passwordMatch = await bcrypt.compare(loginPassword.trim(), userData.password);
-              if (!passwordMatch) {
-                setLoginError("Incorrect password.");
+                router.replace("/dashboard");
+              } catch (err) {
+                setLoginError("Unexpected error: " + (err instanceof Error ? err.message : String(err)));
                 setLoading(false);
-                return;
               }
-              setLoading(false);
-              router.replace("/dashboard");
             }} className="flex flex-col gap-4 mt-4">
               <label className="flex flex-col gap-1">
                 <span className="font-medium text-gray-800">Email</span>
@@ -138,63 +153,77 @@ export default function LoginPage() {
             <form onSubmit={async e => {
               e.preventDefault();
               setSignUpError("");
+              // Validate all fields
+              if (!signUpUsername.trim()) {
+                setSignUpError("Please enter a username.");
+                return;
+              }
               if (!signUpEmail.trim() || !signUpPassword.trim()) {
                 setSignUpError("Please enter a valid email and password.");
                 return;
               }
+              if (signUpPassword !== signUpPasswordConfirm) {
+                setSignUpError("Passwords do not match.");
+                return;
+              }
+              if (captchaInput.trim() !== captchaAnswer) {
+                setSignUpError("Captcha answer is incorrect.");
+                generateCaptcha();
+                return;
+              }
+              if (getPasswordStrength(signUpPassword) < 4) {
+                setSignUpError("Password is too weak. Please use a stronger password.");
+                return;
+              }
               setLoading(true);
               try {
-                // Check if user already exists
-                const { data: existing, error: checkError } = await supabase
-                  .from("users")
-                  .select("id")
-                  .eq("email", signUpEmail.trim())
-                  .single();
-                if (checkError && checkError.code !== 'PGRST116') {
-                  setSignUpError("Error checking user: " + checkError.message);
+                const res = await fetch("/api/auth/signup", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ username: signUpUsername.trim(), email: signUpEmail.trim(), password: signUpPassword.trim() })
+                });
+                const result = await res.json();
+                if (!res.ok) {
+                  setSignUpError(result.error || "Sign up failed.");
                   setLoading(false);
                   return;
                 }
-                if (existing) {
-                  setSignUpError("Email already registered.");
+                // Auto-login after sign up
+                const loginRes = await fetch("/api/auth/login", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email: signUpEmail.trim(), password: signUpPassword.trim() })
+                });
+                const loginResult = await loginRes.json();
+                if (!loginRes.ok) {
+                  setSignUpError("Account created, but automatic login failed. Please log in manually.");
                   setLoading(false);
                   return;
                 }
-                // Hash password before storing
-                const hashedPassword = await bcrypt.hash(signUpPassword.trim(), 10);
-                // Insert new user
-                const { error: insertError } = await supabase
-                  .from("users")
-                  .insert([{ email: signUpEmail.trim(), password: hashedPassword }]);
-                if (insertError) {
-                  setSignUpError("Error creating user: " + insertError.message);
-                  setLoading(false);
-                  return;
-                }
+                setSignUpUsername("");
                 setSignUpEmail("");
                 setSignUpPassword("");
+                setSignUpPasswordConfirm("");
+                setCaptchaInput("");
                 setSignUpError("");
                 setLoading(false);
-                // Automatically log in the user
-                setLoginEmail(signUpEmail.trim());
-                setLoginPassword(signUpPassword.trim());
-                setShowLoginForm(true);
-                // Simulate login and route
-                const { data: userData, error: loginError } = await supabase
-                  .from("users")
-                  .select("id, email, password")
-                  .eq("email", signUpEmail.trim())
-                  .single();
-                if (!loginError && userData && await bcrypt.compare(signUpPassword.trim(), userData.password)) {
-                  router.replace("/dashboard");
-                  return;
-                }
-                setSignUpError("Account created, but automatic login failed. Please log in manually.");
+                router.replace("/dashboard");
               } catch (err) {
                 setSignUpError("Unexpected error: " + (err instanceof Error ? err.message : String(err)));
                 setLoading(false);
               }
             }} className="flex flex-col gap-4 mt-4">
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-gray-800">Username</span>
+                <input
+                  type="text"
+                  value={signUpUsername}
+                  onChange={e => setSignUpUsername(sanitizeInput(e.target.value))}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  placeholder="Choose a username"
+                  required
+                />
+              </label>
               <label className="flex flex-col gap-1">
                 <span className="font-medium text-gray-800">Email</span>
                 <input
@@ -223,6 +252,17 @@ export default function LoginPage() {
                   required
                 />
               </label>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-gray-800">Confirm Password</span>
+                <input
+                  type="password"
+                  value={signUpPasswordConfirm}
+                  onChange={e => setSignUpPasswordConfirm(sanitizeInput(e.target.value))}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  placeholder="Re-enter your password"
+                  required
+                />
+              </label>
               {/* Password strength bar */}
               <div className="h-2 w-full bg-gray-200 rounded mt-1 mb-1">
                 <div
@@ -231,6 +271,18 @@ export default function LoginPage() {
                 ></div>
               </div>
               <div className={`text-sm ${passwordStrength <= 2 ? 'text-red-600' : passwordStrength === 3 ? 'text-yellow-600' : 'text-green-600'}`}>{passwordStrengthLabel}</div>
+              {/* Captcha */}
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-gray-800">Captcha: {captchaQuestion}</span>
+                <input
+                  type="text"
+                  value={captchaInput}
+                  onChange={e => setCaptchaInput(sanitizeInput(e.target.value))}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  placeholder="Answer the question above"
+                  required
+                />
+              </label>
               {signUpError && <div className="text-red-600 text-sm">{signUpError}</div>}
               <button type="submit" className="mt-2 px-6 py-3 rounded-xl bg-blue-600 text-white text-lg font-semibold shadow hover:bg-blue-700 transition">Sign Up</button>
             </form>
