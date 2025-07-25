@@ -21,12 +21,15 @@ export async function POST(req: Request) {
   }
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
+  console.log("[SIGNUP] username:", username, "email:", email, "password:", password, "hashed:", hashedPassword);
   // Insert user
   const { error: insertError } = await supabase
     .from("users")
     .insert([{ username, email, password: hashedPassword }]);
   if (insertError) {
+    console.error("[SIGNUP] Insert error:", insertError.message);
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
+  console.log("[SIGNUP] User created successfully");
   return NextResponse.json({ success: true }, { status: 201 });
 }

@@ -15,12 +15,17 @@ export async function POST(request: Request) {
     .select("id, email, password, username")
     .eq("email", email)
     .single();
+  console.log("[LOGIN] email:", email, "password:", password, "user:", user);
   if (userError || !user) {
+    console.error("[LOGIN] User not found or error:", userError);
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
   // Compare password
+  console.log("[LOGIN] Comparing password:", password, "with hash:", user.password);
   const passwordMatch = await bcrypt.compare(password, user.password);
+  console.log("[LOGIN] Password match:", passwordMatch);
   if (!passwordMatch) {
+    console.error("[LOGIN] Incorrect password for email:", email);
     return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
   }
   // Create JWT token
