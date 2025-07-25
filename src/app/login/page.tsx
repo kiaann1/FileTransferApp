@@ -20,6 +20,10 @@ export default function LoginPage() {
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpError, setSignUpError] = useState("");
 
+  // Add password strength state
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordStrengthLabel, setPasswordStrengthLabel] = useState("");
+
   const handleLogin = async (provider: "google" | "email") => {
     setLoading(true);
     setError("");
@@ -30,6 +34,28 @@ export default function LoginPage() {
     // Email login can be added here
     setLoading(false);
   };
+
+  // Helper to sanitize input
+  function sanitizeInput(input: string) {
+    return input.replace(/<[^>]*>?/gm, "").replace(/['"\\;]/g, "");
+  }
+
+  // Helper to check password rules
+  function getPasswordStrength(password: string) {
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    return score;
+  }
+  function getStrengthLabel(score: number) {
+    if (score <= 2) return "Weak";
+    if (score === 3) return "Medium";
+    if (score >= 4) return "Strong";
+    return "";
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -171,12 +197,40 @@ export default function LoginPage() {
             }} className="flex flex-col gap-4 mt-4">
               <label className="flex flex-col gap-1">
                 <span className="font-medium text-gray-800">Email</span>
-                <input type="email" value={signUpEmail} onChange={e => setSignUpEmail(e.target.value)} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" placeholder="Enter your email" required />
+                <input
+                  type="email"
+                  value={signUpEmail}
+                  onChange={e => setSignUpEmail(sanitizeInput(e.target.value))}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  placeholder="Enter your email"
+                  required
+                />
               </label>
               <label className="flex flex-col gap-1">
                 <span className="font-medium text-gray-800">Password</span>
-                <input type="password" value={signUpPassword} onChange={e => setSignUpPassword(e.target.value)} className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" placeholder="Enter your password" required />
+                <input
+                  type="password"
+                  value={signUpPassword}
+                  onChange={e => {
+                    const sanitized = sanitizeInput(e.target.value);
+                    setSignUpPassword(sanitized);
+                    const score = getPasswordStrength(sanitized);
+                    setPasswordStrength(score);
+                    setPasswordStrengthLabel(getStrengthLabel(score));
+                  }}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  placeholder="Enter your password"
+                  required
+                />
               </label>
+              {/* Password strength bar */}
+              <div className="h-2 w-full bg-gray-200 rounded mt-1 mb-1">
+                <div
+                  className={`h-2 rounded ${passwordStrength <= 2 ? 'bg-red-500' : passwordStrength === 3 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                  style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                ></div>
+              </div>
+              <div className={`text-sm ${passwordStrength <= 2 ? 'text-red-600' : passwordStrength === 3 ? 'text-yellow-600' : 'text-green-600'}`}>{passwordStrengthLabel}</div>
               {signUpError && <div className="text-red-600 text-sm">{signUpError}</div>}
               <button type="submit" className="mt-2 px-6 py-3 rounded-xl bg-blue-600 text-white text-lg font-semibold shadow hover:bg-blue-700 transition">Sign Up</button>
             </form>
