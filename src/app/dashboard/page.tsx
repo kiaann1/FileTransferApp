@@ -112,6 +112,9 @@ export default function DashboardPage() {
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpError, setSignUpError] = useState("");
 
+  // Add notification state
+  const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
@@ -139,6 +142,35 @@ export default function DashboardPage() {
     })();
   }, [user]);
 
+  // Helper to fetch notifications (simulate for now)
+  useEffect(() => {
+    if (!user) return;
+    // Example: fetch notifications from Supabase (replace with your table/logic)
+    (async () => {
+      const { data } = await supabase
+        .from("gallery_notifications")
+        .select("id, message")
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false });
+      if (data) setNotifications(data);
+    })();
+  }, [user]);
+
+  // Listen for new user joins (simulate real-time with polling or Supabase Realtime)
+  useEffect(() => {
+    // Example: poll every 30s for new notifications
+    const interval = setInterval(async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("gallery_notifications")
+        .select("id, message")
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false });
+      if (data) setNotifications(data);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   if (loading) {
     return <div className="p-8">Loading..</div>;
   }
@@ -147,6 +179,18 @@ export default function DashboardPage() {
   // TODO: Fetch invites and activity from Supabase
   // const invites = [];
   // const recentActivity = [];
+
+  // Clear notification handler
+  const handleClearNotification = async (id: string) => {
+    await supabase.from("gallery_notifications").delete().eq("id", id);
+    setNotifications(notifications.filter(n => n.id !== id));
+  };
+
+  // Logout handler
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace("/login");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -165,12 +209,33 @@ export default function DashboardPage() {
               <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition focus:outline-none" aria-label="Team Invites">
                 {/* Bell SVG */}
                 <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><path d="M14 25c1.657 0 3-1.343 3-3h-6c0 1.657 1.343 3 3 3zm7-7V12c0-3.314-2.686-6-6-6S9 8.686 9 12v6l-2 2v1h16v-1l-2-2z" fill="#2563EB"/></svg>
-                {/* Notification badge if invites exist */}
-                {/* {invites.length > 0 && (
+                {/* Notification badge if notifications exist */}
+                {notifications.length > 0 && (
                   <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
-                )} */}
+                )}
               </button>
+              {/* Notifications panel */}
+              {notifications.length > 0 && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                  <div className="p-4 font-bold text-gray-900 border-b">Notifications</div>
+                  <ul className="max-h-64 overflow-y-auto">
+                    {notifications.map(n => (
+                      <li key={n.id} className="flex items-center justify-between px-4 py-3 border-b last:border-b-0">
+                        <span className="text-gray-700">{n.message}</span>
+                        <button className="ml-2 text-gray-400 hover:text-red-600 text-lg font-bold" onClick={() => handleClearNotification(n.id)} aria-label="Clear notification">×</button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
+            {/* Logout button */}
+            <button
+              className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
           </div>
         </div>
         {/* Gallery list with create button */}
