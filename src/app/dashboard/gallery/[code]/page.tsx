@@ -117,6 +117,12 @@ export default function GalleryPage() {
 
   const handleFileUpload = useCallback(async (filesList: File[] | FileList) => {
     if (!gallery) return;
+    // Check authentication before uploading
+    const user = await supabase.auth.getUser();
+    if (!user || !user.data?.user) {
+      alert("You must be logged in to upload files.");
+      return;
+    }
     setUploading(true);
     for (let i = 0; i < filesList.length; i++) {
       const file = filesList[i];
