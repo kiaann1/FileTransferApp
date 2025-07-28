@@ -229,17 +229,10 @@ export default function LoginPage() {
                   userId = null;
                 }
                 if (userId) {
-                  // Try to insert user into 'id' table if not exists
-                  const { data: existing, error: findError } = await supabase
+                  // Always upsert user into 'id' table to ensure existence
+                  await supabase
                     .from('id')
-                    .select('id')
-                    .eq('id', userId)
-                    .single();
-                  if (!existing) {
-                    await supabase
-                      .from('id')
-                      .insert({ id: userId, username: signUpUsername.trim(), email: signUpEmail.trim() });
-                  }
+                    .upsert({ id: userId, username: signUpUsername.trim(), email: signUpEmail.trim() }, { onConflict: 'id' });
                 }
                 setSignUpUsername("");
                 setSignUpEmail("");
