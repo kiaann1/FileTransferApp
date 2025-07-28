@@ -219,6 +219,28 @@ export default function LoginPage() {
                   setLoading(false);
                   return;
                 }
+                // Ensure user exists in 'id' table for foreign key
+                // Get user id from Supabase auth (if available)
+                let userId = null;
+                try {
+                  const { data: user } = await supabase.auth.getUser();
+                  userId = user?.user?.id || null;
+                } catch (e) {
+                  userId = null;
+                }
+                if (userId) {
+                  // Try to insert user into 'id' table if not exists
+                  const { data: existing, error: findError } = await supabase
+                    .from('id')
+                    .select('id')
+                    .eq('id', userId)
+                    .single();
+                  if (!existing) {
+                    await supabase
+                      .from('id')
+                      .insert({ id: userId, username: signUpUsername.trim(), email: signUpEmail.trim() });
+                  }
+                }
                 setSignUpUsername("");
                 setSignUpEmail("");
                 setSignUpPassword("");
