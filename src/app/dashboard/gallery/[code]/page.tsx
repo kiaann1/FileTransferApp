@@ -101,12 +101,16 @@ export default function GalleryPage() {
 
   async function handleDeleteFile(file: GalleryFile | null) {
     if (!file) return;
-    if (!window.confirm(`Delete ${file.name}? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete ${file.name}? This cannot be undone.`)) {
+      toast('Delete cancelled.', { type: 'info' });
+      return;
+    }
     // Extract file path from URL (adjust if your URL format is different)
     const urlParts = file.url?.split('/');
     const filePath = urlParts.slice(urlParts.length - 2).join('/');
     await supabase.storage.from('gallery-files').remove([filePath]);
     await supabase.from('gallery_files').delete().eq('id', file.id);
+    toast('File deleted.', { type: 'success' });
     if (gallery) {
       fetchFiles(gallery.id);
     }
