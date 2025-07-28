@@ -501,16 +501,31 @@ useEffect(() => {
                   sortedFiles.map(file => (
                     <tr
                       key={file.id}
-                      className={`hover:bg-[#f3f4fe] ${selectedFiles.includes(file.id) ? 'ring-4 ring-[#6c63ff] bg-[#f3f4fe]' : 'border-b'}`}
-                      style={selectedFiles.includes(file.id) ? { border: 'none' } : {}}
+                      className={`hover:bg-[#f3f4fe] ${selectedFiles.includes(file.id) ? 'border-4 border-[#6c63ff] bg-[#f3f4fe]' : 'border-b'}`}
+                      style={selectedFiles.includes(file.id) ? { borderColor: '#6c63ff' } : {}}
                     >
                       <td className="py-3 px-3 flex items-center gap-3">
                         {/* File type icon and preview, left/right click actions */}
                         <span
                           className="inline-block bg-[#e0e7ff] rounded p-2 cursor-pointer"
-                          onClick={() => file.type === 'image' ? handleCopyUrl(file.url) : handleOpenModal(file)}
+                          onClick={async () => {
+                            if (file.type === 'image') {
+                              try {
+                                const response = await fetch(file.url);
+                                const blob = await response.blob();
+                                await navigator.clipboard.write([
+                                  new window.ClipboardItem({ [blob.type]: blob })
+                                ]);
+                                toast('Image copied to clipboard!', { type: 'success' });
+                              } catch {
+                                toast('Failed to copy image.', { type: 'error' });
+                              }
+                            } else {
+                              handleOpenModal(file);
+                            }
+                          }}
                           onContextMenu={e => handleContextMenu(e, file)}
-                          title={file.type === 'image' ? 'Click to copy image URL' : 'Right click for options'}
+                          title={file.type === 'image' ? 'Click to copy image' : 'Right click for options'}
                         >
                           {file.type === 'image' ? (
                             <img src={file.url} alt={file.name} className="w-10 h-10 object-cover rounded" />
@@ -525,21 +540,29 @@ useEffect(() => {
                       {/* File size from metadata or fallback */}
                       <td className="py-3 px-3 text-gray-700">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</td>
                       {/* Uploaded by: actual email if available */}
-                      <td className="py-3 px-3 flex items-center gap-3 align-middle">
-                        <span className="text-gray-700 font-medium flex items-center h-full justify-center">{file.uploader_email || '--'}</span>
+                      <td className="py-3 px-3 flex items-center gap-3 align-middle" style={{ verticalAlign: 'middle' }}>
+                        <span className="text-gray-700 font-medium flex items-center justify-center" style={{ height: '40px' }}>{file.uploader_email || '--'}</span>
                       </td>
                       <td className="py-3 px-3">
                         <button className="text-[#ff4d4f] font-semibold mr-3 hover:underline" onClick={() => handleDeleteFile(file)}>Delete</button>
                         <button
                           className="text-[#6c63ff] font-semibold hover:underline ml-2"
-                          onClick={e => {
+                          onClick={async e => {
                             e.stopPropagation();
-                            const link = document.createElement('a');
-                            link.href = file.url;
-                            link.download = file.name;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            try {
+                              const response = await fetch(file.url);
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = file.name;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              window.URL.revokeObjectURL(url);
+                            } catch {
+                              toast('Failed to download file.', { type: 'error' });
+                            }
                           }}
                         >Download</button>
                         <button className={`ml-2 px-2 py-1 rounded ${selectedFiles.includes(file.id) ? 'bg-[#6c63ff] text-white' : 'bg-gray-100 text-[#6c63ff]'}`} onClick={() => handleSelectFile(file.id)}>
