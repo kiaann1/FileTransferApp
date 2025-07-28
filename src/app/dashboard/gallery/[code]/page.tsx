@@ -468,8 +468,14 @@ useEffect(() => {
           <div ref={dropRef} className="rounded-2xl border-2 border-[#b3b3ff] bg-white p-10 flex flex-col items-center justify-center text-center shadow-sm" style={{ minHeight: 180 }}>
             <label htmlFor="file-upload-input" className="cursor-pointer flex flex-col items-center w-full">
               <div className="flex items-center gap-6 mb-3">
-                <span className="inline-block bg-[#f3f4fe] rounded-full p-4"><svg width="40" height="40" fill="none" viewBox="0 0 40 40"><rect x="10" y="20" width="20" height="10" rx="5" fill="#b3b3ff"/><path d="M20 25V15" stroke="#6c63ff" strokeWidth="3" strokeLinecap="round"/><path d="M15 20l5-5 5 5" stroke="#6c63ff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
-                <span className="inline-block bg-[#f3f4fe] rounded-full p-4"><svg width="40" height="40" fill="none" viewBox="0 0 40 40"><rect x="10" y="10" width="20" height="20" rx="5" fill="#b3b3ff"/><text x="20" y="28" textAnchor="middle" fontSize="14" fill="#6c63ff">PDF</text></svg></span>
+                <span className="inline-block bg-[#f3f4fe] rounded-full p-4">
+                  {/* Custom upload SVG icon */}
+                  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="20" width="20" height="10" rx="5" fill="#b3b3ff"/>
+                    <path d="M20 25V13" stroke="#6c63ff" strokeWidth="3" strokeLinecap="round"/>
+                    <path d="M15 18l5-5 5 5" stroke="#6c63ff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
               </div>
               <span className="text-xl font-semibold text-[#6c63ff]">Click here to upload your file or drag.</span>
               <span className="text-sm text-gray-400 mt-2">Supported Format: SVG, JPG, PNG, PDF, DOC, HTML, TSX (10mb each)</span>
