@@ -39,6 +39,7 @@ export default function GalleryPage() {
   };
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
+  const [fetchError, setFetchError] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [passwordInput, setPasswordInput] = useState("");
@@ -214,7 +215,10 @@ async function fetchFiles(galleryId: string) {
     .select("*")
     .eq("gallery_id", galleryId);
   if (error) {
+    setFetchError(error.message || JSON.stringify(error));
     console.error('Error fetching files:', error);
+  } else {
+    setFetchError("");
   }
   setFiles(filesData || []);
 }
@@ -342,10 +346,15 @@ useEffect(() => {
             </label>
           </div>
         </div>
-        {/* Debug output: show raw files array */}
+        {/* Debug output: show raw files array and gallery object */}
         <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-900">
           <strong>Debug: files array</strong>
           <pre>{JSON.stringify(files, null, 2)}</pre>
+          <strong>Debug: gallery object</strong>
+          <pre>{JSON.stringify(gallery, null, 2)}</pre>
+          {fetchError && (
+            <div className="mt-2 text-red-700 font-bold">Supabase fetch error: {fetchError}</div>
+          )}
         </div>
         {/* File table */}
         <div className="bg-white rounded-2xl shadow p-8">
