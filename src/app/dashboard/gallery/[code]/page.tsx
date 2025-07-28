@@ -302,40 +302,91 @@ useEffect(() => {
     return 0;
   });
 
+  // Rename gallery state
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameLoading, setRenameLoading] = useState(false);
+  const [renameError, setRenameError] = useState("");
+
+  // Handle rename submit
+  async function handleRenameSubmit() {
+    if (!gallery || !renameValue.trim() || gallery.name === renameValue.trim()) {
+      setRenaming(false);
+      setRenameError("");
+      return;
+    }
+    setRenameLoading(true);
+    setRenameError("");
+    const { error } = await supabase
+      .from("galleries")
+      .update({ name: renameValue.trim() })
+      .eq("id", gallery.id);
+    setRenameLoading(false);
+    if (error) {
+      setRenameError("Failed to rename gallery.");
+      toast("Failed to rename gallery.", { type: "error" });
+    } else {
+      setGallery({ ...gallery, name: renameValue.trim() });
+      setRenaming(false);
+      toast("Gallery renamed!", { type: "success" });
+    }
+  }
+
+  // Topbar with rename
   return (
     <div className="min-h-screen bg-[#f7f8fa] flex">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
-      {/* Sidebar */}
-      <aside className="w-72 bg-white border-r border-[#e0e7ff] flex flex-col justify-between py-8 px-6 shadow-sm">
-        <div>
-          <div className="flex items-center gap-3 mb-10">
-            <span className="inline-block bg-[#6c63ff] rounded-full p-2"><svg width="32" height="32" fill="none" viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="8" fill="#b3b3ff"/></svg></span>
-            <span className="text-2xl font-bold text-[#6c63ff]">FileTransfer</span>
-          </div>
-          <nav className="flex flex-col gap-2">
-            {sidebarNav.map(item => (
-              <a key={item.name} href={item.href} className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-semibold hover:bg-[#f3f4fe] transition">
-                <span>{item.icon}</span>
-                <span>{item.name}</span>
-              </a>
-            ))}
-          </nav>
-        </div>
-        {/* User info */}
-        <div className="flex items-center gap-3 mt-10">
-          <span className="inline-block w-10 h-10 rounded-full bg-[#e0e7ff] flex items-center justify-center text-[#6c63ff] font-bold text-xl">U</span>
-          <div>
-            <div className="font-semibold text-gray-900">User Name</div>
-            <div className="text-sm text-gray-500">user@email.com</div>
-          </div>
-        </div>
-      </aside>
-      {/* Main content */}
+      {/* Sidebar ...existing code... */}
       <main className="flex-1 px-12 py-10">
         {/* Topbar */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-extrabold text-gray-900 mb-1 tracking-tight">{gallery?.name || "Gallery"}</h1>
+            <div className="flex items-center gap-2 mb-1">
+              {!renaming ? (
+                <>
+                  <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">{gallery?.name || "Gallery"}</h1>
+                  <button
+                    className="ml-2 p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+                    title="Rename Gallery"
+                    onClick={() => {
+                      setRenaming(true);
+                      setRenameValue(gallery?.name || "");
+                    }}
+                  >
+                    {/* Pen icon */}
+                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M4 20h4l10.5-10.5a1.5 1.5 0 0 0-2.12-2.12L6 17.88V20z" fill="#6c63ff"/><path d="M14.06 7.94l2 2" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round"/></svg>
+                  </button>
+                </>
+              ) : (
+                <form
+                  onSubmit={e => {
+                    e.preventDefault();
+                    handleRenameSubmit();
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    value={renameValue}
+                    onChange={e => setRenameValue(e.target.value)}
+                    onBlur={handleRenameSubmit}
+                    className="text-4xl font-extrabold text-gray-900 tracking-tight border-b-2 border-[#6c63ff] bg-transparent focus:outline-none px-2"
+                    autoFocus
+                    disabled={renameLoading}
+                  />
+                  <button
+                    type="submit"
+                    className="ml-2 p-2 rounded-full bg-[#6c63ff] text-white hover:bg-[#5548c8] focus:outline-none"
+                    disabled={renameLoading}
+                    title="Save"
+                  >
+                    {/* Check icon */}
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                </form>
+              )}
+            </div>
+            {renameError && <div className="text-red-600 text-sm mb-1">{renameError}</div>}
             <div className="text-gray-400 font-medium">All your uploaded files, assets, and documents in one place.</div>
           </div>
           <div className="flex items-center gap-3">
