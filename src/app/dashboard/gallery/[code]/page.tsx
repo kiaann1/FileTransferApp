@@ -19,6 +19,11 @@ type GalleryFile = {
 };
 
 export default function GalleryPage() {
+  // Rename gallery state
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameLoading, setRenameLoading] = useState(false);
+  const [renameError, setRenameError] = useState("");
   // Settings modal state
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsPassword, setSettingsPassword] = useState("");
@@ -28,8 +33,10 @@ export default function GalleryPage() {
   // Password modal state
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  // Router and params
   const router = useRouter();
   const { code } = useParams();
+  // Gallery state
   type Gallery = {
     id: string;
     name: string;
@@ -42,15 +49,16 @@ export default function GalleryPage() {
   const [loading, setLoading] = useState(true);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Drop ref
   const dropRef = useRef<HTMLDivElement>(null);
   // Context menu and modal state
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; file: GalleryFile | null }>({ visible: false, x: 0, y: 0, file: null });
   const [modalFile, setModalFile] = useState<GalleryFile | null>(null);
-  // New Folder modal state
+  // New Folder modal state (move to top level, always called)
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderError, setNewFolderError] = useState("");
-  
+  // Rename gallery state (already declared above)
 
   // Open modal handler
   async function handleOpenModal(file: GalleryFile) {
@@ -245,11 +253,7 @@ useEffect(() => {
     return 0;
   });
 
-  // Rename gallery state (move to top level, always called)
-  const [renaming, setRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState("");
-  const [renameLoading, setRenameLoading] = useState(false);
-  const [renameError, setRenameError] = useState("");
+  // ...existing code...
 
   // Handle rename submit
   async function handleRenameSubmit() {
