@@ -219,21 +219,6 @@ export default function LoginPage() {
                   setLoading(false);
                   return;
                 }
-                // Ensure user exists in 'id' table for foreign key
-                // Get user id from Supabase auth (if available)
-                let userId = null;
-                try {
-                  const { data: user } = await supabase.auth.getUser();
-                  userId = user?.user?.id || null;
-                } catch (e) {
-                  userId = null;
-                }
-                if (userId) {
-                  // Always upsert user into 'id' table to ensure existence
-                  await supabase
-                    .from('id')
-                    .upsert({ id: userId, username: signUpUsername.trim(), email: signUpEmail.trim() }, { onConflict: 'id' });
-                }
                 setSignUpUsername("");
                 setSignUpEmail("");
                 setSignUpPassword("");

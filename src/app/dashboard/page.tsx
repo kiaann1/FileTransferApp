@@ -548,19 +548,17 @@ export default function DashboardPage() {
                     return code;
                   }
                   try {
-                    // Check if user exists in referenced table (id)
+                    // Ensure user exists in referenced table (id)
                     const { data: userExists, error: userError } = await supabase
                       .from("id")
                       .select("id")
                       .eq("id", user.id)
                       .single();
                     if (userError || !userExists) {
-                      await Swal.fire({
-                        icon: "error",
-                        title: "User not found",
-                        text: "Your user account does not exist in the id table. Please contact support."
-                      });
-                      return;
+                      // Insert user automatically if missing
+                      await supabase
+                        .from("id")
+                        .upsert({ id: user.id, username: user.user_metadata?.username || null, email: user.email || null }, { onConflict: 'id' });
                     }
                     // 1. Generate a unique code (retry if collision)
                     let code = '';
