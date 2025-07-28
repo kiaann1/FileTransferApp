@@ -172,28 +172,29 @@ export default function GalleryPage() {
   useEffect(() => {
     const dropArea = dropRef.current;
     if (!dropArea) return;
-    function handleDragOver(e: DragEvent) {
+    function handleDragOver(e: Event) {
       e.preventDefault();
-      if (dropArea) dropArea.classList.add("border-[#6c63ff]");
+      (dropArea as HTMLDivElement).classList.add("border-[#6c63ff]");
     }
-    function handleDragLeave(e: DragEvent) {
+    function handleDragLeave(e: Event) {
       e.preventDefault();
-      if (dropArea) dropArea.classList.remove("border-[#6c63ff]");
+      (dropArea as HTMLDivElement).classList.remove("border-[#6c63ff]");
     }
-    function handleDrop(e: DragEvent) {
+    function handleDrop(e: Event) {
       e.preventDefault();
-      if (dropArea) dropArea.classList.remove("border-[#6c63ff]");
-      if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-        handleFileUpload(e.dataTransfer.files);
+      (dropArea as HTMLDivElement).classList.remove("border-[#6c63ff]");
+      const files = (e as DragEvent).dataTransfer?.files;
+      if (files && files.length > 0) {
+        handleFileUpload(files);
       }
     }
-    dropArea?.addEventListener("dragover", handleDragOver);
-    dropArea?.addEventListener("dragleave", handleDragLeave);
-    dropArea?.addEventListener("drop", handleDrop);
+    dropArea.addEventListener("dragover", handleDragOver);
+    dropArea.addEventListener("dragleave", handleDragLeave);
+    dropArea.addEventListener("drop", handleDrop);
     return () => {
-      dropArea?.removeEventListener("dragover", handleDragOver);
-      dropArea?.removeEventListener("dragleave", handleDragLeave);
-      dropArea?.removeEventListener("drop", handleDrop);
+      dropArea.removeEventListener("dragover", handleDragOver);
+      dropArea.removeEventListener("dragleave", handleDragLeave);
+      dropArea.removeEventListener("drop", handleDrop);
     };
   }, [handleFileUpload]);
 
@@ -276,8 +277,8 @@ useEffect(() => {
   const sidebarNav = [
     { name: "Dashboard", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="#6c63ff"/></svg>, href: "/dashboard" },
     { name: "My Files", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#b3b3ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#6c63ff"/></svg>, href: `/dashboard/gallery/${code}` },
-    { name: "Collaborators", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#b3b3ff"/><rect x="6" y="16" width="12" height="4" rx="2" fill="#6c63ff"/></svg>, href: "#" },
-    { name: "Settings", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e7ff"/><rect x="10" y="6" width="4" height="12" rx="2" fill="#6c63ff"/></svg>, href: "#" },
+    { name: "Collaborators", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#b3b3ff"/><rect x="6" y="16" width="12" height="4" rx="2" fill="#6c63ff"/></svg>, href: "/dashboard/collaborators" },
+    { name: "Settings", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e7ff"/><rect x="10" y="6" width="4" height="12" rx="2" fill="#6c63ff"/></svg>, href: "/dashboard/settings" },
   ];
 
   return (
@@ -291,10 +292,10 @@ useEffect(() => {
           </div>
           <nav className="flex flex-col gap-2">
             {sidebarNav.map(item => (
-              <button key={item.name} onClick={() => router.push(item.href)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-semibold hover:bg-[#f3f4fe] transition">
+              <a key={item.name} href={item.href} className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-semibold hover:bg-[#f3f4fe] transition">
                 <span>{item.icon}</span>
                 <span>{item.name}</span>
-              </button>
+              </a>
             ))}
           </nav>
         </div>
@@ -318,7 +319,7 @@ useEffect(() => {
         </div>
         {/* Upload box */}
         <div className="mb-10">
-          <div className="rounded-2xl border-2 border-[#b3b3ff] bg-white p-10 flex flex-col items-center justify-center text-center shadow-sm" style={{ minHeight: 180 }}>
+          <div ref={dropRef} className="rounded-2xl border-2 border-[#b3b3ff] bg-white p-10 flex flex-col items-center justify-center text-center shadow-sm" style={{ minHeight: 180 }}>
             <label htmlFor="file-upload-input" className="cursor-pointer flex flex-col items-center w-full">
               <div className="flex items-center gap-6 mb-3">
                 <span className="inline-block bg-[#f3f4fe] rounded-full p-4"><svg width="40" height="40" fill="none" viewBox="0 0 40 40"><rect x="10" y="20" width="20" height="10" rx="5" fill="#b3b3ff"/><path d="M20 25V15" stroke="#6c63ff" strokeWidth="3" strokeLinecap="round"/><path d="M15 20l5-5 5 5" stroke="#6c63ff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
@@ -380,10 +381,16 @@ useEffect(() => {
                   files.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase())).map(file => (
                     <tr key={file.id} className="border-b hover:bg-[#f3f4fe]">
                       <td className="py-3 px-3 flex items-center gap-3">
-                        {/* File type icon */}
-                        {file.type === 'image' && <span className="inline-block bg-[#e0e7ff] rounded p-2"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3" fill="#6c63ff"/><circle cx="9" cy="14" r="2.5" fill="#b3b3ff"/></svg></span>}
-                        {file.type === 'file' && <span className="inline-block bg-[#e0e7ff] rounded p-2"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg></span>}
-                        {file.type === 'folder' && <span className="inline-block bg-[#fbbf24] rounded p-2"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="8" rx="3" fill="#fbbf24"/></svg></span>}
+                        {/* File type icon and preview */}
+                        {file.type === 'image' ? (
+                          <span className="inline-block bg-[#e0e7ff] rounded p-2">
+                            <img src={file.url} alt={file.name} className="w-10 h-10 object-cover rounded" />
+                          </span>
+                        ) : file.type === 'file' ? (
+                          <span className="inline-block bg-[#e0e7ff] rounded p-2"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg></span>
+                        ) : file.type === 'folder' ? (
+                          <span className="inline-block bg-[#fbbf24] rounded p-2"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="8" rx="3" fill="#fbbf24"/></svg></span>
+                        ) : null}
                         <span className="font-semibold text-gray-900">{file.name}</span>
                       </td>
                       <td className="py-3 px-3 text-gray-700">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</td>
