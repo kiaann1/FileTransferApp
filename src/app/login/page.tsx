@@ -2,7 +2,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import bcrypt from "bcryptjs";
 
 export default function LoginPage() {
   const router = useRouter();

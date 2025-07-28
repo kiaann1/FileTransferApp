@@ -2,7 +2,6 @@ import { UserContextProvider } from "./user-context";
 import React from "react";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import { redirect } from "next/navigation";
 
 export type User = {
   id: string;

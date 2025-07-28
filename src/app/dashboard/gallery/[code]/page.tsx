@@ -302,7 +302,7 @@ useEffect(() => {
     return 0;
   });
 
-  // Rename gallery state
+  // Rename gallery state (move to top level, always called)
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [renameLoading, setRenameLoading] = useState(false);
@@ -356,6 +356,14 @@ useEffect(() => {
                     {/* Pen icon */}
                     <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M4 20h4l10.5-10.5a1.5 1.5 0 0 0-2.12-2.12L6 17.88V20z" fill="#6c63ff"/><path d="M14.06 7.94l2 2" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round"/></svg>
                   </button>
+                  <button
+                    className="ml-1 p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+                    title="Gallery Settings"
+                    onClick={() => setShowSettingsModal(true)}
+                  >
+                    {/* Cog icon */}
+                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="#6c63ff" d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7zm7.43-4.07l-1.43-.23a7.02 7.02 0 0 0-.51-1.23l.86-1.16a.5.5 0 0 0-.06-.66l-1.13-1.13a.5.5 0 0 0-.66-.06l-1.16.86a7.02 7.02 0 0 0-1.23-.51l-.23-1.43A.5.5 0 0 0 15 4h-2a.5.5 0 0 0-.5.43l-.23 1.43a7.02 7.02 0 0 0-1.23.51l-1.16-.86a.5.5 0 0 0-.66.06l-1.13 1.13a.5.5 0 0 0-.06.66l.86 1.16a7.02 7.02 0 0 0-.51 1.23l-1.43.23A.5.5 0 0 0 4 9v2c0 .25.18.46.43.5l1.43.23c.12.43.29.84.51 1.23l-.86 1.16a.5.5 0 0 0 .06.66l1.13 1.13a.5.5 0 0 0 .66.06l1.16-.86c.39.22.8.39 1.23.51l.23 1.43c.04.25.25.43.5.43h2c.25 0 .46-.18.5-.43l.23-1.43c.43-.12.84-.29 1.23-.51l1.16.86a.5.5 0 0 0 .66-.06l1.13-1.13a.5.5 0 0 0 .06-.66l-.86-1.16c.22-.39.39-.8.51-1.23l1.43-.23A.5.5 0 0 0 20 13v-2c0-.25-.18-.46-.43-.5z"/></svg>
+                  </button>
                 </>
               ) : (
                 <form
@@ -386,6 +394,56 @@ useEffect(() => {
                 </form>
               )}
             </div>
+      {/* Settings Modal for password */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onClick={() => setShowSettingsModal(false)}>
+          <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md relative" onClick={e => e.stopPropagation()}>
+            <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowSettingsModal(false)} aria-label="Close">&times;</button>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Gallery Settings</h2>
+            <form
+              onSubmit={async e => {
+                e.preventDefault();
+                setSettingsError("");
+                if (!gallery) return;
+                if (!settingsPassword.trim()) {
+                  setSettingsError("Password cannot be empty.");
+                  return;
+                }
+                const { error } = await supabase
+                  .from("galleries")
+                  .update({ password: settingsPassword.trim() })
+                  .eq("id", gallery.id);
+                if (error) {
+                  setSettingsError("Failed to update password.");
+                  toast("Failed to update password.", { type: "error" });
+                } else {
+                  setGallery({ ...gallery, password: settingsPassword.trim() });
+                  setShowSettingsModal(false);
+                  setSettingsPassword("");
+                  toast("Password updated!", { type: "success" });
+                }
+              }}
+              className="flex flex-col gap-4"
+            >
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-gray-800">Set Gallery Password</span>
+                <input
+                  type="password"
+                  value={settingsPassword}
+                  onChange={e => setSettingsPassword(e.target.value)}
+                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#6c63ff] text-black"
+                  placeholder="Enter new password"
+                />
+              </label>
+              {settingsError && <div className="text-red-600 text-sm">{settingsError}</div>}
+              <button
+                type="submit"
+                className="mt-4 px-6 py-3 rounded-xl bg-[#6c63ff] text-white text-lg font-semibold shadow hover:bg-[#5548c8] transition"
+              >Save Password</button>
+            </form>
+          </div>
+        </div>
+      )}
             {renameError && <div className="text-red-600 text-sm mb-1">{renameError}</div>}
             <div className="text-gray-400 font-medium">All your uploaded files, assets, and documents in one place.</div>
           </div>
