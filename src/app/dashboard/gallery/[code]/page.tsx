@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
@@ -56,7 +58,7 @@ export default function GalleryPage() {
   const [modalFileSize, setModalFileSize] = useState<number | null>(null);
   const [comments, setComments] = useState<string[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [toast, setToast] = useState<string>("");
+  const [toastMsg, setToastMsg] = useState<string>("");
   const [accordionTab, setAccordionTab] = useState<'meta' | 'comments'>('meta');
   // New Folder modal state
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -127,7 +129,7 @@ export default function GalleryPage() {
     // Check authentication before uploading
     const user = await supabase.auth.getUser();
     if (!user || !user.data?.user) {
-      alert("You must be logged in to upload files.");
+      toast("You must be logged in to upload files.", { type: "error" });
       return;
     }
     setUploading(true);
@@ -144,7 +146,7 @@ export default function GalleryPage() {
           upsert: false,
         });
       if (uploadError) {
-        alert(`Failed to upload ${file.name}: ${uploadError.message}`);
+        toast(`Failed to upload ${file.name}: ${uploadError.message}`, { type: "error" });
         continue;
       }
       // Get public URL
@@ -164,9 +166,10 @@ export default function GalleryPage() {
         size: file.size,
       }).select();
       if (dbError) {
-        alert(`Failed to insert ${file.name} into DB: ${dbError.message}`);
+        toast(`Failed to insert ${file.name} into DB: ${dbError.message}`, { type: "error" });
       } else {
         uploaded = true;
+        toast(`Uploaded ${file.name}`, { type: "success" });
       }
     }
     setUploading(false);
@@ -301,6 +304,7 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-[#f7f8fa] flex">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
       {/* Sidebar */}
       <aside className="w-72 bg-white border-r border-[#e0e7ff] flex flex-col justify-between py-8 px-6 shadow-sm">
         <div>
@@ -341,6 +345,7 @@ useEffect(() => {
               onClick={() => {
                 if (gallery?.code) {
                   navigator.clipboard.writeText(gallery.code);
+                  toast("Gallery code copied!", { type: "success" });
                 }
               }}
             >Copy</button>

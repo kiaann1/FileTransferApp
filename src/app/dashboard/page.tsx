@@ -5,8 +5,16 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { useUser } from "./user-context";
 type Gallery = { id: string; name: string; code: string; password?: string; owner_id: string };
+type GalleryAnalytics = {
+  fileCount: number;
+  lastActivity: string | null;
+  memberCount: number;
+};
+// Add starred property for local state
+type StarredMap = Record<string, boolean>;
 type GalleryCardProps = {
   gallery: Gallery;
+  analytics?: GalleryAnalytics;
   onDelete: (id: string) => void;
   onAddUsers: (gallery: Gallery) => void;
   onResetPassword: (gallery: Gallery) => void;
@@ -15,6 +23,10 @@ type GalleryCardProps = {
 
 function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword, userId }: GalleryCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  // Star state is passed as prop
+  const [starred, setStarred] = useState(false);
+  // Accept analytics as prop
+  const { analytics } = arguments[0];
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,9 +44,17 @@ function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword, userId }:
   // Detect mobile device
   const isMobile = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
   const isOwner = gallery && gallery.owner_id === userId;
+  // Copy code handler
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(gallery.code);
+  };
+  // Share handler (simple modal)
+  const handleShare = () => {
+    window.open(`${window.location.origin}/dashboard/gallery/${gallery.code}`, '_blank');
+  };
   return (
     <div
-      className="relative bg-white rounded-xl shadow p-6 hover:shadow-lg border border-gray-200 transition cursor-pointer"
+      className="relative bg-white rounded-xl shadow p-6 hover:shadow-lg border border-gray-200 transition cursor-pointer group"
       onClick={() => {
         if (isMobile) setMenuOpen(true);
       }}
@@ -52,7 +72,52 @@ function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword, userId }:
       >
         <div className="font-bold text-lg text-gray-900 mb-2">{gallery.name}</div>
         <div className="text-gray-500 text-sm">Code: {gallery.code}</div>
+        {/* Gallery analytics */}
+        {analytics && (
+          <div className="mt-2 flex gap-4 text-xs text-gray-500">
+            <span title="Files">
+              <svg width="16" height="16" fill="none" viewBox="0 0 16 16" className="inline mr-1 align-text-bottom"><rect x="2" y="2" width="12" height="12" rx="3" fill="#6c63ff"/><rect x="6" y="8" width="4" height="1.5" rx="0.75" fill="white"/></svg>
+              {analytics.fileCount} files
+            </span>
+            <span title="Members">
+              <svg width="16" height="16" fill="none" viewBox="0 0 16 16" className="inline mr-1 align-text-bottom"><circle cx="8" cy="6" r="3" fill="#6c63ff"/><rect x="3" y="10" width="10" height="3" rx="1.5" fill="#6c63ff"/></svg>
+              {analytics.memberCount} members
+            </span>
+            <span title="Last Activity">
+              <svg width="16" height="16" fill="none" viewBox="0 0 16 16" className="inline mr-1 align-text-bottom"><circle cx="8" cy="8" r="7" stroke="#6c63ff" strokeWidth="2" fill="none"/><rect x="7.5" y="4" width="1" height="5" rx="0.5" fill="#6c63ff"/><rect x="7.5" y="8" width="4" height="1" rx="0.5" fill="#6c63ff"/></svg>
+              {analytics.lastActivity ? new Date(analytics.lastActivity).toLocaleDateString() : 'No activity'}
+            </span>
+          </div>
+        )}
       </a>
+      {/* Quick actions on hover */}
+      <div className="absolute bottom-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+        <button
+          className="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold shadow hover:bg-gray-200"
+          onClick={e => { e.stopPropagation(); handleCopyCode(); }}
+          title="Copy Code"
+        >Copy Code</button>
+        <button
+          className="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold shadow hover:bg-gray-200"
+          onClick={e => { e.stopPropagation(); handleShare(); }}
+          title="Share"
+        >Share</button>
+      </div>
+      {/* Star button */}
+      <button
+        className={`absolute top-4 left-12 p-2 rounded-full focus:outline-none transition ${starred ? 'bg-yellow-100' : 'hover:bg-gray-100'}`}
+        onClick={e => {
+          e.stopPropagation();
+          setStarred((v) => !v);
+        }}
+        aria-label={starred ? "Unstar Gallery" : "Star Gallery"}
+        title={starred ? "Unstar Gallery" : "Star Gallery"}
+      >
+        {/* Star SVG */}
+        <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill={starred ? "#FFD700" : "#E5E7EB"} stroke="#FFD700" strokeWidth="1"/>
+        </svg>
+      </button>
       <button
         className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 focus:outline-none"
         onClick={e => {
@@ -102,6 +167,10 @@ export default function DashboardPage() {
   const user = useUser();
   // Removed unused loading state
   const [galleries, setGalleries] = useState<Gallery[]>([]);
+  // Starred galleries state (local)
+  const [starredMap, setStarredMap] = useState<StarredMap>({});
+  // Gallery analytics state
+  const [galleryAnalytics, setGalleryAnalytics] = useState<Record<string, GalleryAnalytics>>({});
   const [addUsersModal, setAddUsersModal] = useState<{ open: boolean; gallery: Gallery | null }>({ open: false, gallery: null });
   const [resetPasswordModal, setResetPasswordModal] = useState<{ open: boolean; gallery: Gallery | null }>({ open: false, gallery: null });
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; gallery: Gallery | null }>({ open: false, gallery: null });
@@ -148,13 +217,38 @@ export default function DashboardPage() {
         }, {} as Record<string, Gallery>)
       );
       if (isMounted) setGalleries(uniqueGalleries);
+      // Fetch analytics for each gallery
+      const analyticsMap: Record<string, GalleryAnalytics> = {};
+      await Promise.all(uniqueGalleries.map(async (gallery) => {
+        // File count
+        const { count: fileCount } = await supabase
+          .from("gallery_files")
+          .select("id", { count: "exact", head: true })
+          .eq("gallery_id", gallery.id);
+        // Last activity (latest file upload)
+        const { data: lastFile } = await supabase
+          .from("gallery_files")
+          .select("created_at")
+          .eq("gallery_id", gallery.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        // Member count
+        const { count: memberCount } = await supabase
+          .from("gallery_members")
+          .select("id", { count: "exact", head: true })
+          .eq("gallery_id", gallery.id);
+        analyticsMap[gallery.id] = {
+          fileCount: fileCount ?? 0,
+          lastActivity: lastFile && lastFile.length > 0 ? lastFile[0].created_at : null,
+          memberCount: memberCount ?? 0,
+        };
+      }));
+      if (isMounted) setGalleryAnalytics(analyticsMap);
     };
     fetchGalleries();
     return () => { isMounted = false; };
   }, [user?.id]);
 
-  // Fix infinite loop and polling in notifications fetch
-  // Only fetch once on mount, and use Supabase Realtime for updates
   useEffect(() => {
     if (!user?.id) return;
     let isMounted = true;
@@ -185,7 +279,6 @@ export default function DashboardPage() {
     };
   }, [user?.id]);
 
-  // Listen for new user joins (simulate real-time with polling or Supabase Realtime)
   useEffect(() => {
     if (!user?.id) return;
     let isMounted = true;
@@ -204,7 +297,6 @@ export default function DashboardPage() {
   }, [user?.id]);
 
 
-  // Clear notification handler
   const handleClearNotification = async (id: string) => {
     await supabase.from("gallery_notifications").delete().eq("id", id);
     setNotifications(notifications.filter(n => n.id !== id));
@@ -217,48 +309,48 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-[#f7f8fa] to-[#e0e7ff]">
       <div className="max-w-7xl mx-auto py-10 px-4">
-        {/* SaaS-style header */}
+        {/* Modern dashboard header */}
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10 border-b pb-6">
           <div>
-            <h1 className="text-4xl font-extrabold text-blue-900 mb-2 tracking-tight">Dashboard</h1>
+            <h1 className="text-4xl font-extrabold text-[#6c63ff] mb-2 tracking-tight">Dashboard</h1>
             {user && (
-              <div className="text-gray-700">Signed in as <span className="font-semibold text-blue-900">{user.email}</span></div>
+              <div className="text-gray-700">Signed in as <span className="font-semibold text-[#6c63ff]">{user.email}</span></div>
             )}
           </div>
           <div className="flex gap-4 items-center">
             {/* Notification bell for team invites and dropdown */}
             <div className="relative">
               <button
-                className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 transition focus:outline-none shadow"
+                className="p-2 rounded-full bg-[#e0e7ff] hover:bg-[#d1d5fa] transition focus:outline-none shadow"
                 aria-label="Team Invites"
                 onClick={() => setShowNotifications((v) => !v)}
               >
                 {/* Bell SVG */}
-                <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><path d="M14 25c1.657 0 3-1.343 3-3h-6c0 1.657 1.343 3 3 3zm7-7V12c0-3.314-2.686-6-6-6S9 8.686 9 12v6l-2 2v1h16v-1l-2-2z" fill="#2563EB"/></svg>
+                <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><path d="M14 25c1.657 0 3-1.343 3-3h-6c0 1.657 1.343 3 3 3zm7-7V12c0-3.314-2.686-6-6-6S9 8.686 9 12v6l-2 2v1h16v-1l-2-2z" fill="#6c63ff"/></svg>
                 {(notifications.length > 0 || invites.length > 0 || activity.length > 0) && (
                   <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
                 )}
               </button>
               {showNotifications && (
                 <div
-                  className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50"
+                  className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-[#e0e7ff] z-50"
                   tabIndex={-1}
                   onBlur={() => setShowNotifications(false)}
                 >
-                  <div className="p-4 font-bold text-blue-900 border-b flex justify-between items-center">
+                  <div className="p-4 font-bold text-[#6c63ff] border-b flex justify-between items-center">
                     <span>Notifications</span>
                     <button className="text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowNotifications(false)} aria-label="Close">&times;</button>
                   </div>
                   <ul className="max-h-64 overflow-y-auto">
                     {invites.length > 0 && (
-                      <li className="px-4 py-2 border-b font-semibold text-blue-700">Team Invites</li>
+                      <li className="px-4 py-2 border-b font-semibold text-[#6c63ff]">Team Invites</li>
                     )}
                     {invites.map(invite => (
                       <li key={invite.id} className="flex flex-col px-4 py-2 border-b last:border-b-0">
                         <span className="text-gray-700">Invited to <span className="font-bold">{invite.gallery_name}</span> by <span className="font-bold">{invite.invited_by}</span></span>
-                        <a href={`/dashboard/gallery/${invite.gallery_id}`} className="text-blue-600 hover:underline text-sm mt-1">View Gallery</a>
+                        <a href={`/dashboard/gallery/${invite.gallery_id}`} className="text-[#6c63ff] hover:underline text-sm mt-1">View Gallery</a>
                       </li>
                     ))}
                     {activity.length > 0 && (
@@ -287,21 +379,34 @@ export default function DashboardPage() {
               )}
             </div>
             <button
-              className="px-5 py-2 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition"
+              className="px-5 py-2 rounded-xl bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition"
               onClick={handleLogout}
             >
               Logout
             </button>
           </div>
         </header>
-        {/* Gallery list with create button */}
-        <section className="mb-12">
-        </section>
+        {/* Dashboard summary bar */}
+        <section className="mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center border border-[#e0e7ff]">
+              <span className="text-3xl font-bold text-[#6c63ff]">{galleries.length}</span>
+              <span className="text-gray-500 mt-2">Total Galleries</span>
+            </div>
+            <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center border border-[#e0e7ff]">
+              <span className="text-3xl font-bold text-green-600">{invites.length}</span>
+              <span className="text-gray-500 mt-2">Team Invites</span>
+            </div>
+            <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center border border-[#e0e7ff]">
+              <span className="text-3xl font-bold text-blue-900">{activity.length}</span>
+              <span className="text-gray-500 mt-2">Recent Activity</span>
+            </div>
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h2 className="text-2xl font-bold text-blue-900">Your Galleries</h2>
+            <h2 className="text-2xl font-bold text-[#6c63ff]">Your Galleries</h2>
             <div className="flex gap-2 flex-wrap">
               <button
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition"
                 onClick={() => setShowModal(true)}
               >
                 <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="9" y="4" width="2" height="12" rx="1" fill="white"/><rect x="4" y="9" width="12" height="2" rx="1" fill="white"/></svg>
@@ -315,6 +420,7 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
+        </section>
         {/* Join Gallery Modal */}
         {showJoinModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => setShowJoinModal(false)}>
@@ -329,7 +435,7 @@ export default function DashboardPage() {
                     setJoinError("Please enter a valid code.");
                     return;
                   }
-                  // Check if gallery exists and if it needs a password
+
                   const { data: galleryData, error } = await supabase
                     .from("galleries")
                     .select("id, code, password")
@@ -411,9 +517,10 @@ export default function DashboardPage() {
         )}
           {galleries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
-              <span className="text-gray-500 mb-4">No galleries yet.</span>
+              <svg width="64" height="64" fill="none" viewBox="0 0 64 64" className="mb-4"><rect x="8" y="8" width="48" height="48" rx="12" fill="#e0e7ff"/><rect x="24" y="32" width="16" height="4" rx="2" fill="#6c63ff"/></svg>
+              <span className="text-gray-500 mb-4 text-lg">No galleries yet. Create your first workspace!</span>
               <button
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white text-lg font-semibold shadow hover:bg-blue-700 transition"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#6c63ff] text-white text-lg font-semibold shadow hover:bg-[#5548c8] transition"
                 onClick={() => setShowModal(true)}
               >
                 <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="11" y="5" width="2" height="14" rx="1" fill="white"/><rect x="5" y="11" width="14" height="2" rx="1" fill="white"/></svg>
@@ -422,18 +529,34 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
-              {galleries.map(gallery => (
-                <GalleryCard
-                  key={gallery.id}
-                  gallery={gallery}
-                  onDelete={(id) => {
-                    const galleryObj = galleries.find(g => g.id === id) || null;
-                    setDeleteModal({ open: true, gallery: galleryObj });
-                  }}
-                  onAddUsers={(gallery) => setAddUsersModal({ open: true, gallery })}
-                  onResetPassword={(gallery) => setResetPasswordModal({ open: true, gallery })}
-                  userId={user?.id ?? null}
-                />
+              {/* Sort galleries: starred first */}
+              {[...galleries].sort((a, b) => {
+                const aStar = starredMap[a.id] ? 1 : 0;
+                const bStar = starredMap[b.id] ? 1 : 0;
+                return bStar - aStar;
+              }).map(gallery => (
+                <div className="relative group" key={gallery.id}>
+                  <GalleryCard
+                    gallery={gallery}
+                    analytics={galleryAnalytics[gallery.id]}
+                    onDelete={(id) => {
+                      const galleryObj = galleries.find(g => g.id === id) || null;
+                      setDeleteModal({ open: true, gallery: galleryObj });
+                    }}
+                    onAddUsers={(gallery) => setAddUsersModal({ open: true, gallery })}
+                    onResetPassword={(gallery) => setResetPasswordModal({ open: true, gallery })}
+                    userId={user?.id ?? null}
+                  />
+                  {/* Owner badge */}
+                  {gallery.owner_id === user?.id && (
+                    <span className="absolute top-4 left-4 bg-[#6c63ff] text-white text-xs font-bold px-3 py-1 rounded-full shadow">Owner</span>
+                  )}
+                  {/* Quick View button on hover */}
+                  <a
+                    href={`/dashboard/gallery/${gallery.code}`}
+                    className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition bg-[#6c63ff] text-white px-4 py-2 rounded-lg shadow font-semibold text-sm hover:bg-[#5548c8]"
+                  >View</a>
+                </div>
               ))}
             </div>
           )}
