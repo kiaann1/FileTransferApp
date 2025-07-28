@@ -152,9 +152,9 @@ export default function GalleryPage() {
         .from("gallery-files")
         .getPublicUrl(filePath);
       // Insert metadata into gallery_files table
-      let dbType: 'image' | 'file' | 'folder' = 'file';
+      let dbType: 'file' | 'image' | 'folder' = 'file';
       if (file.type && file.type.startsWith('image')) dbType = 'image';
-      const { error: dbError } = await supabase.from("gallery_files").insert({
+      const { data: dbData, error: dbError } = await supabase.from("gallery_files").insert({
         gallery_id: gallery.id, 
         name: file.name,
         type: dbType,
@@ -162,8 +162,14 @@ export default function GalleryPage() {
         uploader_email: user.data.user.email,
         uploaded_at: new Date(timestamp).toISOString(),
         size: file.size,
-      });
-      if (!dbError) uploaded = true;
+      }).select();
+      if (dbError) {
+        console.error('DB insert error:', dbError);
+        alert(`Failed to insert ${file.name} into DB: ${dbError.message}`);
+      } else {
+        console.log('DB insert success:', dbData);
+        uploaded = true;
+      }
     }
     setUploading(false);
     // Always fetch files after upload
