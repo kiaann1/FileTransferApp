@@ -11,6 +11,7 @@ type GalleryFile = {
   url: string;
   size?: number;
   type: string;
+  last_modified?: string | Date;
   // add other fields as needed
 };
 
@@ -234,468 +235,122 @@ useEffect(() => {
   }
 
   if (loading) {
-    return <div className="p-8">Loading gallery...</div>;
+    return <div className="p-8 text-center text-gray-400 text-xl">Loading gallery...</div>;
   }
 
+  // Sidebar navigation items
+  const sidebarNav = [
+    { name: "Dashboard", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="#6c63ff"/></svg>, href: "/dashboard" },
+    { name: "My Files", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#b3b3ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#6c63ff"/></svg>, href: `/dashboard/gallery/${code}` },
+    { name: "Collaborators", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#b3b3ff"/><rect x="6" y="16" width="12" height="4" rx="2" fill="#6c63ff"/></svg>, href: "#" },
+    { name: "Settings", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e7ff"/><rect x="10" y="6" width="4" height="12" rx="2" fill="#6c63ff"/></svg>, href: "#" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Top Navigation */}
-      <div className="w-full flex items-center justify-start px-6 pt-6 pb-2">
-        <button
-          className="flex items-center gap-2 text-blue-700 hover:text-blue-900 font-semibold text-lg bg-blue-50 px-4 py-2 rounded-xl shadow hover:bg-blue-100 transition"
-          onClick={() => router.push("/dashboard")}
-        >
-          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M12.5 15l-5-5 5-5" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          Back to Galleries
-        </button>
-      </div>
-      <div className="max-w-6xl mx-auto py-12 px-6">
+    <div className="min-h-screen bg-[#f7f8fa] flex">
+      {/* Sidebar */}
+      <aside className="w-72 bg-white border-r border-[#e0e7ff] flex flex-col justify-between py-8 px-6 shadow-sm">
+        <div>
+          <div className="flex items-center gap-3 mb-10">
+            <span className="inline-block bg-[#6c63ff] rounded-full p-2"><svg width="32" height="32" fill="none" viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="8" fill="#b3b3ff"/></svg></span>
+            <span className="text-2xl font-bold text-[#6c63ff]">FileTransfer</span>
+          </div>
+          <nav className="flex flex-col gap-2">
+            {sidebarNav.map(item => (
+              <button key={item.name} onClick={() => router.push(item.href)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-semibold hover:bg-[#f3f4fe] transition">
+                <span>{item.icon}</span>
+                <span>{item.name}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+        {/* User info */}
+        <div className="flex items-center gap-3 mt-10">
+          <span className="inline-block w-10 h-10 rounded-full bg-[#e0e7ff] flex items-center justify-center text-[#6c63ff] font-bold text-xl">U</span>
+          <div>
+            <div className="font-semibold text-gray-900">User Name</div>
+            <div className="text-sm text-gray-500">user@email.com</div>
+          </div>
+        </div>
+      </aside>
+      {/* Main content */}
+      <main className="flex-1 px-12 py-10">
+        {/* Topbar */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-1">{gallery?.name || "Gallery"}</h1>
-            <div className="text-sm text-gray-400 font-mono">Code: {gallery?.code}</div>
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-1 tracking-tight">My Files & Assets</h1>
+            <div className="text-gray-400 font-medium">All your uploaded files, assets, and documents in one place.</div>
           </div>
-          <div className="flex gap-4">
-            <button className="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition" onClick={() => setShowNewFolderModal(true)}>New Folder</button>
-            <button className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold shadow hover:bg-gray-200 transition" onClick={() => {
-              setSettingsName(gallery?.name || "");
-              setSettingsPassword(gallery?.password || "");
-              setShowSettingsModal(true);
-            }}>Settings</button>
-          </div>
-        {/* Settings Modal */}
-        {showSettingsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => setShowSettingsModal(false)}>
-            <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-lg relative" onClick={e => e.stopPropagation()}>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Gallery Settings</h2>
-              <form className="flex flex-col gap-6" onSubmit={async e => {
-                e.preventDefault();
-                setSettingsError("");
-                // Update gallery name and password
-                if (!settingsName.trim()) {
-                  setSettingsError("Gallery name is required.");
-                  return;
-                }
-                if (gallery) {
-                  await supabase.from("galleries").update({
-                    name: settingsName.trim(),
-                    password: settingsPassword.trim() || null
-                  }).eq("id", gallery.id);
-                  setShowSettingsModal(false);
-                  fetchFiles(gallery.id);
-                }
-              }}>
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Gallery Name</label>
-                  <input type="text" value={settingsName} onChange={e => setSettingsName(e.target.value)} className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" placeholder="Gallery name" />
-                </div>
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Gallery Password</label>
-                  <input type="text" value={settingsPassword} onChange={e => setSettingsPassword(e.target.value)} className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" placeholder="Set or change password" />
-                </div>
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Invite User (Email)</label>
-                  <div className="flex gap-2">
-                    <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="border border-gray-300 rounded px-3 py-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" placeholder="user@email.com" />
-                    <button type="button" className="px-4 py-2 bg-blue-600 text-white rounded font-semibold shadow hover:bg-blue-700 transition" onClick={async () => {
-                      if (!inviteEmail.trim()) return;
-                      // Insert into gallery_members (stub, add actual user logic as needed)
-                      if (gallery) {
-                        await supabase.from("gallery_members").insert({
-                          gallery_id: gallery.id,
-                          email: inviteEmail.trim()
-                        });
-                      }
-                      setInviteEmail("");
-                    }}>Invite</button>
-                  </div>
-                </div>
-                {settingsError && <div className="text-red-600 text-sm">{settingsError}</div>}
-                <div className="flex gap-4 justify-end mt-4">
-                  <button type="button" className="px-6 py-2 rounded bg-gray-200 text-gray-700 font-semibold shadow hover:bg-gray-300 transition" onClick={() => setShowSettingsModal(false)}>Close</button>
-                  <button type="submit" className="px-6 py-2 rounded bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition">Save</button>
-                </div>
-              </form>
-              <button className="absolute top-4 right-4 text-gray-500 hover:text-black text-2xl font-bold bg-white rounded-full shadow p-2 transition" onClick={() => setShowSettingsModal(false)} aria-label="Close">&times;</button>
-            </div>
-          </div>
-        )}
+          <button className="px-6 py-3 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base">+ New Upload</button>
         </div>
-        {/* New Folder Modal */}
-        {showNewFolderModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => setShowNewFolderModal(false)}>
-            <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative" onClick={e => e.stopPropagation()}>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Folder</h2>
-              <form onSubmit={async e => {
-                e.preventDefault();
-                if (!newFolderName.trim()) {
-                  setNewFolderError("Folder name is required.");
-                  return;
-                }
-                setNewFolderError("");
-                // Insert folder into DB
-                if (gallery) {
-                  await supabase.from("gallery_files").insert({
-                    gallery_id: gallery.id,
-                    name: newFolderName.trim(),
-                    type: "folder",
-                    url: null
-                  });
-                  setShowNewFolderModal(false);
-                  setNewFolderName("");
-                  fetchFiles(gallery.id);
-                  setActiveTab('folders');
-                }
-              }} className="flex flex-col gap-4">
-                <input
-                  type="text"
-                  value={newFolderName}
-                  onChange={e => setNewFolderName(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                  placeholder="Folder name"
-                  autoFocus
-                />
-                {newFolderError && <div className="text-red-600 text-sm">{newFolderError}</div>}
-                <button type="submit" className="mt-2 px-6 py-3 rounded bg-blue-600 text-white text-lg font-semibold shadow hover:bg-blue-700 transition">Create Folder</button>
-              </form>
-              <button className="absolute top-4 right-4 text-gray-500 hover:text-black text-2xl font-bold bg-white rounded-full shadow p-2 transition" onClick={() => setShowNewFolderModal(false)} aria-label="Close">&times;</button>
+        {/* Upload box */}
+        <div className="mb-10">
+          <div className="rounded-2xl border-2 border-[#b3b3ff] bg-white p-10 flex flex-col items-center justify-center text-center shadow-sm" style={{ minHeight: 180 }}>
+            <label htmlFor="file-upload-input" className="cursor-pointer flex flex-col items-center w-full">
+              <div className="flex items-center gap-6 mb-3">
+                <span className="inline-block bg-[#f3f4fe] rounded-full p-4"><svg width="40" height="40" fill="none" viewBox="0 0 40 40"><rect x="10" y="20" width="20" height="10" rx="5" fill="#b3b3ff"/><path d="M20 25V15" stroke="#6c63ff" strokeWidth="3" strokeLinecap="round"/><path d="M15 20l5-5 5 5" stroke="#6c63ff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                <span className="inline-block bg-[#f3f4fe] rounded-full p-4"><svg width="40" height="40" fill="none" viewBox="0 0 40 40"><rect x="10" y="10" width="20" height="20" rx="5" fill="#b3b3ff"/><text x="20" y="28" textAnchor="middle" fontSize="14" fill="#6c63ff">PDF</text></svg></span>
+              </div>
+              <span className="text-xl font-semibold text-[#6c63ff]">Click here to upload your file or drag.</span>
+              <span className="text-sm text-gray-400 mt-2">Supported Format: SVG, JPG, PNG, PDF, DOC, HTML, TSX (10mb each)</span>
+              <input type="file" multiple className="hidden" id="file-upload-input" onChange={e => { if (e.target.files) handleFileUpload(e.target.files); }} disabled={uploading} />
+              {uploading && <span className="mt-2 text-[#6c63ff]">Uploading...</span>}
+            </label>
+          </div>
+        </div>
+        {/* File table */}
+        <div className="bg-white rounded-2xl shadow p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="text-xl font-bold text-gray-900">Attached Files <span className="text-xs text-[#6c63ff] font-semibold ml-2">{files.length} Total</span></div>
+            <div className="flex gap-3">
+              <input type="text" placeholder="Search..." className="border border-gray-200 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#6c63ff]" />
+              <button className="px-5 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base">Filter</button>
+              <button className="px-5 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base">+ Add Collaborator</button>
             </div>
           </div>
-        )}
-        {/* Password Modal */}
-        {showPasswordModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative" onClick={e => e.stopPropagation()}>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Enter Gallery Password</h2>
-              <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
-                <input
-                  type="password"
-                  value={passwordInput}
-                  onChange={e => setPasswordInput(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                  placeholder="Gallery password"
-                  autoFocus
-                />
-                {passwordError && <div className="text-red-600 text-sm">{passwordError}</div>}
-                <button type="submit" className="mt-2 px-6 py-3 rounded bg-blue-600 text-white text-lg font-semibold shadow hover:bg-blue-700 transition">Access Gallery</button>
-              </form>
-            </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-base">
+              <thead>
+                <tr className="border-b">
+                  <th className="py-3 px-3 font-semibold text-gray-600">File Name</th>
+                  <th className="py-3 px-3 font-semibold text-gray-600">File Size</th>
+                  <th className="py-3 px-3 font-semibold text-gray-600">Last Modified</th>
+                  <th className="py-3 px-3 font-semibold text-gray-600">Uploaded By</th>
+                  <th className="py-3 px-3 font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {files.length === 0 ? (
+                  <tr><td colSpan={5} className="text-gray-400 text-center py-12 text-lg">No files uploaded yet.</td></tr>
+                ) : (
+                  files.map(file => (
+                    <tr key={file.id} className="border-b hover:bg-[#f3f4fe]">
+                      <td className="py-3 px-3 flex items-center gap-3">
+                        {/* File type icon */}
+                        {file.type === 'image' && <span className="inline-block bg-[#e0e7ff] rounded p-2"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3" fill="#6c63ff"/><circle cx="9" cy="14" r="2.5" fill="#b3b3ff"/></svg></span>}
+                        {file.type === 'file' && <span className="inline-block bg-[#e0e7ff] rounded p-2"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg></span>}
+                        {file.type === 'folder' && <span className="inline-block bg-[#fbbf24] rounded p-2"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="8" rx="3" fill="#fbbf24"/></svg></span>}
+                        <span className="font-semibold text-gray-900">{file.name}</span>
+                      </td>
+                      <td className="py-3 px-3 text-gray-700">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</td>
+                      <td className="py-3 px-3 text-gray-700">{file.last_modified ? new Date(file.last_modified).toLocaleDateString() : '--'}</td>
+                      <td className="py-3 px-3 flex items-center gap-3">
+                        {/* Avatar stub, replace with actual user info if available */}
+                        <span className="inline-block w-9 h-9 rounded-full bg-[#e0e7ff] flex items-center justify-center text-[#6c63ff] font-bold text-lg">{file.name[0]?.toUpperCase() || '?'}</span>
+                        <span className="text-gray-700 font-medium">user@email.com</span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <button className="text-[#ff4d4f] font-semibold mr-3 hover:underline" onClick={() => handleDeleteFile(file)}>Delete</button>
+                        <button className="text-[#6c63ff] font-semibold hover:underline" onClick={() => handleOpenModal(file)}>Edit</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-        {/* Gallery Files & Dropbox */}
-        {!showPasswordModal && (
-          <div className="">
-            {/* Dropbox Area */}
-            <div
-              ref={dropRef}
-              className={`mb-10 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-10 transition ${uploading ? "bg-blue-50" : "bg-white"}`}
-              style={{ minHeight: 200, cursor: uploading ? "not-allowed" : "pointer" }}
-              onDragOver={e => { e.preventDefault(); dropRef.current!.classList.add("border-blue-500"); }}
-              onDragLeave={e => { e.preventDefault(); dropRef.current!.classList.remove("border-blue-500"); }}
-              onDrop={e => {
-                e.preventDefault();
-                dropRef.current!.classList.remove("border-blue-500");
-                if (uploading) return;
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  handleFileUpload(e.dataTransfer.files);
-                }
-              }}
-            >
-              <input
-                type="file"
-                multiple
-                className="hidden"
-                id="file-upload-input"
-                onChange={e => {
-                  if (e.target.files) handleFileUpload(e.target.files);
-                }}
-                disabled={uploading}
-              />
-              <label htmlFor="file-upload-input" className="flex flex-col items-center cursor-pointer">
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="8" y="32" width="48" height="20" rx="8" fill="#E0E7FF"/>
-                  <path d="M32 44V24" stroke="#2563EB" strokeWidth="4" strokeLinecap="round"/>
-                  <path d="M24 32l8-8 8 8" stroke="#2563EB" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-                  <ellipse cx="32" cy="54" rx="4" ry="2" fill="#2563EB"/>
-                </svg>
-                <span className="mt-3 text-xl text-gray-700 font-medium">Upload or drag files here <span className="text-blue-600 underline">Browse</span></span>
-                {uploading && <span className="mt-2 text-blue-600">Uploading...</span>}
-              </label>
-            </div>
-            {/* Tabs */}
-            <div className="mb-8 flex gap-2 border-b border-gray-200 items-center">
-              <button onClick={() => setActiveTab('all')} className={`px-5 py-2 font-semibold rounded-t-xl transition ${activeTab === 'all' ? 'border-b-2 border-blue-600 text-blue-700 bg-blue-50' : 'text-gray-600 bg-white'}`}>All</button>
-              <button onClick={() => setActiveTab('images')} className={`px-5 py-2 font-semibold rounded-t-xl transition ${activeTab === 'images' ? 'border-b-2 border-blue-600 text-blue-700 bg-blue-50' : 'text-gray-600 bg-white'}`}>Images</button>
-              <button onClick={() => setActiveTab('files')} className={`px-5 py-2 font-semibold rounded-t-xl transition ${activeTab === 'files' ? 'border-b-2 border-blue-600 text-blue-700 bg-blue-50' : 'text-gray-600 bg-white'}`}>Files</button>
-              <button onClick={() => setActiveTab('folders')} className={`px-5 py-2 font-semibold rounded-t-xl transition ${activeTab === 'folders' ? 'border-b-2 border-blue-600 text-blue-700 bg-blue-50' : 'text-gray-600 bg-white'}`}>Folders</button>
-              {/* Bulk delete button if files are selected */}
-              {selectedFiles.length > 0 && (
-                <button
-                  className="ml-auto px-5 py-2 bg-red-600 text-white rounded-xl font-semibold shadow hover:bg-red-700 transition"
-                  onClick={handleBulkDelete}
-                >
-                  Delete Selected ({selectedFiles.length})
-                </button>
-              )}
-            </div>
-            {/* File List by Tab */}
-            {(() => {
-              let filtered = files;
-              if (activeTab === 'images') filtered = files.filter(f => f.type === 'image');
-              else if (activeTab === 'files') filtered = files.filter(f => f.type === 'file');
-              else if (activeTab === 'folders') filtered = files.filter(f => f.type === 'folder');
-              // 'all' tab: show all files
-              if (filtered.length === 0) return <div className="text-gray-400 text-lg text-center py-12">No files in this section.</div>;
-              return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filtered.map(file => (
-                    file.type === 'folder' ? (
-                      <div
-                        key={file.id}
-                        className={`group bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center border hover:shadow-xl transition cursor-pointer relative`}
-                        onClick={async () => {
-                          setActiveFolder(file);
-                          // Fetch files in this folder
-                          if (gallery) {
-                            const { data: folderFilesData } = await supabase
-                              .from("gallery_files")
-                              .select("*")
-                              .eq("gallery_id", gallery.id)
-                              .eq("type", "file")
-                              .like("url", `%/${file.name}/%`);
-                            setFolderFiles(folderFilesData || []);
-                          }
-                        }}
-                      >
-                        <div className="text-gray-400 mb-2"><svg width="40" height="40" fill="none" viewBox="0 0 32 32"><rect x="4" y="10" width="24" height="12" rx="3" fill="#FBBF24"/><rect x="4" y="6" width="10" height="8" rx="2" fill="#FDE68A"/></svg></div>
-                        <div className="font-semibold text-gray-900 mb-1 truncate w-full text-center">{file.name}</div>
-                        <div className="text-gray-500 text-xs mb-2">Folder</div>
-                      </div>
-                    ) : (
-                      <div
-                        key={file.id}
-                        className={`group bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center border ${selectedFiles.includes(file.id) ? 'border-blue-600' : 'border-gray-100'} hover:shadow-xl transition cursor-pointer relative`}
-                        onContextMenu={e => {
-                          e.preventDefault();
-                          setContextMenu({ visible: true, x: e.clientX, y: e.clientY, file });
-                        }}
-                      >
-                        <div className="w-full flex justify-center mb-4">
-                          {file.type === 'image' ? (
-                          <Image src={file.url} alt={file.name} width={320} height={160} className="rounded-xl max-h-40 max-w-full shadow border group-hover:scale-105 transition cursor-pointer"
-                              onClick={async (e: React.MouseEvent<HTMLImageElement>) => {
-                                e.preventDefault();
-                                try {
-                                  const response = await fetch(file.url);
-                                  const blob = await response.blob();
-                                  await navigator.clipboard.write([
-                                    new window.ClipboardItem({ [blob.type]: blob })
-                                  ]);
-                                  setToast("Image copied to clipboard!");
-                                } catch {
-                                  setToast("Failed to copy image");
-                                }
-                                setTimeout(() => setToast(""), 2000);
-                              }}
-                            />
-                          ) : (
-                            <div className="text-gray-400"><svg width="40" height="40" fill="none" viewBox="0 0 32 32"><rect x="4" y="8" width="24" height="16" rx="4" fill="#2563EB"/><rect x="10" y="14" width="12" height="4" rx="2" fill="white"/></svg></div>
-                          )}
-                        </div>
-                        <div className="font-semibold text-gray-900 mb-1 truncate w-full text-center">{file.name}</div>
-                        <div className="text-gray-500 text-xs mb-2">{file.size} bytes</div>
-                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition">
-                          <button className="px-2 py-1 bg-blue-50 text-blue-700 rounded shadow hover:bg-blue-100 text-xs font-semibold" onClick={() => handleOpenModal(file)}>Preview</button>
-                        </div>
-                      </div>
-                    )
-                  ))}
-                </div>
-              );
-            })()}
-            {/* Folder Modal */}
-            {activeFolder && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-lg" onClick={() => setActiveFolder(null)}>
-                <div className="bg-white rounded-3xl shadow-2xl p-0 w-full max-w-3xl min-h-[500px] relative flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                  <div className="flex flex-col gap-4 p-8">
-                    <div className="flex items-center justify-between mb-2">
-                      <h2 className="text-2xl font-bold text-gray-900">Folder: {activeFolder.name}</h2>
-                      <button className="px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold shadow hover:bg-blue-700 transition" onClick={async () => {
-                        // TODO: Download folder as ZIP (stub)
-                        // You will need JSZip or similar for actual implementation
-                        alert('Download as ZIP coming soon!');
-                      }}>Download as ZIP</button>
-                    </div>
-                    <div className="mb-4">
-                      <input
-                        type="file"
-                        multiple
-                        className="hidden"
-                        id="folder-upload-input"
-                        onChange={async e => {
-                          if (!e.target.files) return;
-                          setFolderUploading(true);
-                          for (let i = 0; i < e.target.files.length; i++) {
-                            const file = e.target.files[i];
-                            const timestamp = Date.now();
-                            const filePath = gallery ? `${gallery.code}/${activeFolder.name}/${timestamp}_${file.name}` : "";
-                            const { error: uploadError } = await supabase.storage
-                              .from("gallery-files")
-                              .upload(filePath, file, {
-                                cacheControl: "3600",
-                                upsert: false,
-                              });
-                            if (!uploadError) {
-                              const { data: urlData } = supabase.storage
-                                .from("gallery-files")
-                                .getPublicUrl(filePath);
-                              if (gallery) {
-                                await supabase.from("gallery_files").insert({
-                                  gallery_id: gallery.id,
-                                  name: file.name,
-                                  type: file.type && file.type.startsWith('image') ? 'image' : 'file',
-                                  url: urlData?.publicUrl || null
-                                });
-                              }
-                            }
-                          }
-                          setFolderUploading(false);
-                          // Refresh folder files
-                          if (gallery) {
-                          if (gallery) {
-                            const { data: folderFilesData } = await supabase
-                              .from("gallery_files")
-                              .select("*")
-                              .eq("gallery_id", gallery.id)
-                              .eq("type", "file")
-                              .like("url", `%/${activeFolder.name}/%`);
-                            setFolderFiles(folderFilesData || []);
-                          }
-                          }
-                        }}
-                        disabled={folderUploading}
-                      />
-                      <label htmlFor="folder-upload-input" className="flex flex-col items-center cursor-pointer">
-                        <span className="mt-3 text-lg text-gray-700 font-medium">Upload or drag files into this folder <span className="text-blue-600 underline">Browse</span></span>
-                        {folderUploading && <span className="mt-2 text-blue-600">Uploading...</span>}
-                      </label>
-                    </div>
-                    <div>
-                      <div className="font-semibold mb-2 text-gray-900">Files in this folder</div>
-                      {folderFiles.length === 0 ? (
-                        <div className="text-gray-400 italic">No files in this folder yet.</div>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                          {folderFiles.map(f => (
-                            <div key={f.id} className="bg-gray-50 rounded-xl p-4 shadow flex flex-col items-center">
-                              <div className="font-semibold text-gray-900 mb-1">{f.name}</div>
-                              <div className="text-gray-500 text-xs mb-2">{f.size} bytes</div>
-                              <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Download</a>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <button className="absolute top-4 right-4 text-gray-500 hover:text-black text-3xl font-bold bg-white rounded-full shadow p-2 transition" onClick={() => setActiveFolder(null)} aria-label="Close">&times;</button>
-                </div>
-              </div>
-            )}
-            {/* Context Menu */}
-            {contextMenu.visible && (
-              <div
-                style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x, zIndex: 1000 }}
-                className="bg-white border rounded shadow-lg py-2 w-40"
-                onClick={() => setContextMenu({ ...contextMenu, visible: false })}
-              >
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-black" onClick={() => { if (contextMenu.file) handleOpenModal(contextMenu.file); setContextMenu({ ...contextMenu, visible: false }); }}>Open</button>
-                <a className="w-full block px-4 py-2 hover:bg-gray-100 text-left text-black" href={contextMenu.file?.url} download target="_blank" rel="noopener noreferrer" onClick={() => setContextMenu({ ...contextMenu, visible: false })}>Download</a>
-                <button className="w-full text-left px-4 py-2 hover:bg-gray text-red-600" onClick={() => { if (contextMenu.file) handleDeleteFile(contextMenu.file); setContextMenu({ ...contextMenu, visible: false }); }}>Delete</button>
-                <button className="w-full text-left px-4 py-2 hover:bg-blue-100 text-blue-700" onClick={() => {
-                  if (contextMenu.file) {
-                    setSelectedFiles(prev => prev.includes(contextMenu.file!.id)
-                      ? prev.filter(id => id !== contextMenu.file!.id)
-                      : [...prev, contextMenu.file!.id]);
-                  }
-                  setContextMenu({ ...contextMenu, visible: false });
-                }}>Select</button>
-              </div>
-            )}
-            {/* Image Modal */}
-            {modalFile && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-lg" onClick={() => setModalFile(null)}>
-                <div className="bg-white rounded-3xl shadow-2xl p-0 w-full max-w-5xl min-h-[650px] relative flex flex-row overflow-hidden" onClick={e => e.stopPropagation()}>
-                  {/* Left: Image Preview or File Icon */}
-                  <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white p-8 gap-6 border-r border-gray-200">
-                    {modalFile.type === 'image' ? (
-                      <Image src={modalFile.url} alt={modalFile.name} width={350} height={350} className="rounded-xl max-h-[350px] max-w-full shadow-lg border" />
-                    ) : modalFile.type === 'folder' ? (
-                      <div className="mb-2 text-gray-400"><svg width="64" height="64" fill="none" viewBox="0 0 32 32"><rect x="4" y="10" width="24" height="12" rx="3" fill="#FBBF24"/><rect x="4" y="6" width="10" height="8" rx="2" fill="#FDE68A"/></svg></div>
-                    ) : (
-                      <div className="mb-2 text-gray-400"><svg width="64" height="64" fill="none" viewBox="0 0 32 32"><rect x="4" y="8" width="24" height="16" rx="4" fill="#2563EB"/><rect x="10" y="14" width="12" height="4" rx="2" fill="white"/></svg></div>
-                    )}
-                    <div className="font-bold text-xl text-gray-900 break-all text-center mt-2">{modalFile.name}</div>
-                    <div className="flex gap-4 text-gray-700 text-sm mt-2">
-                      <span>Size: <span className="font-medium">{modalFileSize !== null ? modalFileSize : modalFile.size} bytes</span></span>
-                      <span>Type: <span className="font-medium">{modalFile.type}</span></span>
-                    </div>
-                  </div>
-                  {/* Right: Tabbed Accordion */}
-                  <div className="flex-1 flex flex-col bg-white p-8">
-                    <div className="mb-4">
-                      <div className="flex gap-2 border-b mb-4">
-                        <button className={`px-4 py-2 font-semibold rounded-t ${accordionTab === 'meta' ? 'border-b-2 border-blue-600 text-blue-700 bg-gray-50' : 'text-gray-600 bg-white'}`} onClick={() => setAccordionTab('meta')}>Metadata</button>
-                        <button className={`px-4 py-2 font-semibold rounded-t ${accordionTab === 'comments' ? 'border-b-2 border-blue-600 text-blue-700 bg-gray-50' : 'text-gray-600 bg-white'}`} onClick={() => setAccordionTab('comments')}>Comments</button>
-                      </div>
-                      {/* Accordion Content */}
-                      {accordionTab === 'meta' && (
-                        <div className="mt-2">
-                          <div className="font-semibold mb-2 text-gray-900">File Metadata</div>
-                          <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-800 shadow-inner border max-h-64 overflow-auto">
-                            <div className="mb-2"><span className="font-semibold">Name:</span> {modalFile.name}</div>
-                            <div className="mb-2"><span className="font-semibold">Type:</span> {modalFile.type}</div>
-                            <div className="mb-2"><span className="font-semibold">Size:</span> {modalFileSize !== null ? modalFileSize : modalFile.size} bytes</div>
-                            <div className="mb-2"><span className="font-semibold">URL:</span> <a href={modalFile.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">Open in new tab</a></div>
-                            {/* Add more metadata fields as needed */}
-                          </div>
-                        </div>
-                      )}
-                      {accordionTab === 'comments' && (
-                        <div className="mt-2">
-                          <div className="font-semibold mb-2 text-gray-900 flex items-center gap-2">
-                            Comments
-                            <span className="text-xs text-gray-400 font-normal">({comments.length})</span>
-                          </div>
-                          <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 min-h-[120px] text-gray-800 shadow-lg border flex flex-col gap-4">
-                            {comments.length === 0 && <div className="text-gray-400 italic text-center">No comments yet. Be the first to add one!</div>}
-                            <div className="flex flex-col gap-3 max-h-48 overflow-y-auto">
-                              {comments.map((c, i) => (
-                                <div key={i} className="flex items-start gap-2">
-                                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg shadow-sm">{c[0]?.toUpperCase() || "C"}</div>
-                                  <div className="bg-white rounded-xl px-4 py-2 shadow border text-sm flex-1">{c}</div>
-                                </div>
-                              ))}
-                            </div>
-                            <form onSubmit={e => { e.preventDefault(); if (newComment.trim()) { setComments([...comments, newComment.trim()]); setNewComment(""); } }} className="flex gap-2 mt-2">
-                              <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} className="border-2 border-blue-200 rounded-xl px-4 py-2 flex-1 text-black bg-white shadow focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Add a comment..." />
-                              <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-xl font-semibold shadow hover:bg-blue-700 transition">Send</button>
-                            </form>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <button className="absolute top-4 right-4 text-gray-500 hover:text-black text-3xl font-bold bg-white rounded-full shadow p-2 transition" onClick={() => setModalFile(null)} aria-label="Close">&times;</button>
-                </div>
-              </div>
-            )}
-            {/* Toast for copy to clipboard */}
-            {toast && (
-              <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-black text-white px-4 py-2 rounded shadow z-[9999]">{toast}</div>
-            )}
-          </div>
-        )}
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
