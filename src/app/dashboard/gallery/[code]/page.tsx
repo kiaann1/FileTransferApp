@@ -12,6 +12,7 @@ type GalleryFile = {
   size?: number;
   type: string;
   last_modified?: string | Date;
+  uploader_email?: string;
   // add other fields as needed
 };
 
@@ -346,16 +347,6 @@ useEffect(() => {
             </label>
           </div>
         </div>
-        {/* Debug output: show raw files array and gallery object */}
-        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-900">
-          <strong>Debug: files array</strong>
-          <pre>{JSON.stringify(files, null, 2)}</pre>
-          <strong>Debug: gallery object</strong>
-          <pre>{JSON.stringify(gallery, null, 2)}</pre>
-          {fetchError && (
-            <div className="mt-2 text-red-700 font-bold">Supabase fetch error: {fetchError}</div>
-          )}
-        </div>
         {/* File table */}
         <div className="bg-white rounded-2xl shadow p-8">
           <div className="flex items-center justify-between mb-6">
@@ -370,16 +361,20 @@ useEffect(() => {
                 <tr className="border-b">
                   <th className="py-3 px-3 font-semibold text-gray-600">File Name</th>
                   <th className="py-3 px-3 font-semibold text-gray-600">File Size</th>
-                  <th className="py-3 px-3 font-semibold text-gray-600">Last Modified</th>
                   <th className="py-3 px-3 font-semibold text-gray-600">Uploaded By</th>
                   <th className="py-3 px-3 font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {files.length === 0 ? (
-                  <tr><td colSpan={5} className="text-gray-400 text-center py-12 text-lg">No files uploaded yet.</td></tr>
+                  <tr><td colSpan={4} className="text-gray-400 text-center py-12 text-lg">No files uploaded yet.</td></tr>
                 ) : (
-                  files.map(file => (
+                  [...files].sort((a, b) => {
+                    // Prefer descending by id (UUIDs are sortable by creation time if using v4, otherwise use timestamp if available)
+                    if (a.id < b.id) return 1;
+                    if (a.id > b.id) return -1;
+                    return 0;
+                  }).map(file => (
                     <tr key={file.id} className="border-b hover:bg-[#f3f4fe]">
                       <td className="py-3 px-3 flex items-center gap-3">
                         {/* File type icon and preview */}
@@ -394,16 +389,15 @@ useEffect(() => {
                         ) : null}
                         <span className="font-semibold text-gray-900">{file.name}</span>
                       </td>
+                      {/* File size from metadata or fallback */}
                       <td className="py-3 px-3 text-gray-700">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</td>
-                      <td className="py-3 px-3 text-gray-700">{file.last_modified ? new Date(file.last_modified).toLocaleDateString() : '--'}</td>
+                      {/* Uploaded by: actual email if available */}
                       <td className="py-3 px-3 flex items-center gap-3">
-                        {/* Avatar stub, replace with actual user info if available */}
                         <span className="inline-block w-9 h-9 rounded-full bg-[#e0e7ff] flex items-center justify-center text-[#6c63ff] font-bold text-lg">{file.name[0]?.toUpperCase() || '?'}</span>
-                        <span className="text-gray-700 font-medium">user@email.com</span>
+                        <span className="text-gray-700 font-medium">{file.uploader_email || '--'}</span>
                       </td>
                       <td className="py-3 px-3">
                         <button className="text-[#ff4d4f] font-semibold mr-3 hover:underline" onClick={() => handleDeleteFile(file)}>Delete</button>
-                        <button className="text-[#6c63ff] font-semibold hover:underline" onClick={() => handleOpenModal(file)}>Edit</button>
                       </td>
                     </tr>
                   ))
