@@ -39,6 +39,7 @@ export default function GalleryPage() {
   };
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -58,6 +59,10 @@ export default function GalleryPage() {
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderError, setNewFolderError] = useState("");
+  // Collaborator state
+  const [collaboratorEmail, setCollaboratorEmail] = useState("");
+  const [collaboratorError, setCollaboratorError] = useState("");
+  const [collaboratorSuccess, setCollaboratorSuccess] = useState("");
   
 
   // Open modal handler
@@ -162,6 +167,35 @@ export default function GalleryPage() {
       await fetchFiles(gallery.id);
     }
   }, [gallery]);
+
+  // Drag-and-drop support for dropper
+  useEffect(() => {
+    const dropArea = dropRef.current;
+    if (!dropArea) return;
+    function handleDragOver(e: DragEvent) {
+      e.preventDefault();
+      if (dropArea) dropArea.classList.add("border-[#6c63ff]");
+    }
+    function handleDragLeave(e: DragEvent) {
+      e.preventDefault();
+      if (dropArea) dropArea.classList.remove("border-[#6c63ff]");
+    }
+    function handleDrop(e: DragEvent) {
+      e.preventDefault();
+      if (dropArea) dropArea.classList.remove("border-[#6c63ff]");
+      if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+        handleFileUpload(e.dataTransfer.files);
+      }
+    }
+    dropArea?.addEventListener("dragover", handleDragOver);
+    dropArea?.addEventListener("dragleave", handleDragLeave);
+    dropArea?.addEventListener("drop", handleDrop);
+    return () => {
+      dropArea?.removeEventListener("dragover", handleDragOver);
+      dropArea?.removeEventListener("dragleave", handleDragLeave);
+      dropArea?.removeEventListener("drop", handleDrop);
+    };
+  }, [handleFileUpload]);
 
   // Hide context menu on click elsewhere
   useEffect(() => {
@@ -281,7 +315,6 @@ useEffect(() => {
             <h1 className="text-4xl font-extrabold text-gray-900 mb-1 tracking-tight">My Files & Assets</h1>
             <div className="text-gray-400 font-medium">All your uploaded files, assets, and documents in one place.</div>
           </div>
-          <button className="px-6 py-3 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base">+ New Upload</button>
         </div>
         {/* Upload box */}
         <div className="mb-10">
@@ -302,10 +335,31 @@ useEffect(() => {
         <div className="bg-white rounded-2xl shadow p-8">
           <div className="flex items-center justify-between mb-6">
             <div className="text-xl font-bold text-gray-900">Attached Files <span className="text-xs text-[#6c63ff] font-semibold ml-2">{files.length} Total</span></div>
-            <div className="flex gap-3">
-              <input type="text" placeholder="Search..." className="border border-gray-200 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#6c63ff]" />
-              <button className="px-5 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base">Filter</button>
-              <button className="px-5 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base">+ Add Collaborator</button>
+            <div className="flex gap-3 items-center">
+              <input type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#6c63ff]" />
+              <button className="px-5 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base" onClick={() => setSearchTerm("")}>Clear</button>
+              <form onSubmit={async e => {
+                e.preventDefault();
+                setCollaboratorError("");
+                setCollaboratorSuccess("");
+                if (!collaboratorEmail) {
+                  setCollaboratorError("Please enter an email.");
+                  return;
+                }
+                // Add collaborator logic (example: insert into collaborators table)
+                const { error } = await supabase.from("collaborators").insert({ gallery_id: gallery?.id, email: collaboratorEmail });
+                if (error) {
+                  setCollaboratorError("Failed to add collaborator.");
+                } else {
+                  setCollaboratorSuccess("Collaborator added!");
+                  setCollaboratorEmail("");
+                }
+              }} className="flex gap-2 items-center">
+                <input type="email" placeholder="Add Collaborator" value={collaboratorEmail} onChange={e => setCollaboratorEmail(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#6c63ff]" />
+                <button type="submit" className="px-5 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base">+ Add</button>
+              </form>
+              {collaboratorError && <span className="text-red-500 text-sm ml-2">{collaboratorError}</span>}
+              {collaboratorSuccess && <span className="text-green-500 text-sm ml-2">{collaboratorSuccess}</span>}
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -320,10 +374,10 @@ useEffect(() => {
                 </tr>
               </thead>
               <tbody>
-                {files.length === 0 ? (
+                {files.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
                   <tr><td colSpan={5} className="text-gray-400 text-center py-12 text-lg">No files uploaded yet.</td></tr>
                 ) : (
-                  files.map(file => (
+                  files.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase())).map(file => (
                     <tr key={file.id} className="border-b hover:bg-[#f3f4fe]">
                       <td className="py-3 px-3 flex items-center gap-3">
                         {/* File type icon */}
