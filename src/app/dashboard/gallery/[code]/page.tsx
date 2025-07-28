@@ -61,8 +61,42 @@ export default function GalleryPage() {
   // Rename gallery state (already declared above)
 
   // Open modal handler
+  // Open modal for file preview and metadata
   async function handleOpenModal(file: GalleryFile) {
     setModalFile(file);
+    setContextMenu({ ...contextMenu, visible: false });
+  }
+
+  // Copy file/image URL to clipboard
+  async function handleCopyUrl(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast("Copied to clipboard!", { type: "success" });
+    } catch {
+      toast("Failed to copy.", { type: "error" });
+    }
+  }
+
+  // Download file
+  function handleDownloadFile(file: GalleryFile) {
+    const link = document.createElement('a');
+    link.href = file.url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Bulk select
+  function handleSelectFile(fileId: string) {
+    setSelectedFiles(prev => prev.includes(fileId) ? prev.filter(id => id !== fileId) : [...prev, fileId]);
+    setContextMenu({ ...contextMenu, visible: false });
+  }
+
+  // Context menu open
+  function handleContextMenu(e: React.MouseEvent, file: GalleryFile) {
+    e.preventDefault();
+    setContextMenu({ visible: true, x: e.clientX, y: e.clientY, file });
   }
 
   async function handleDeleteFile(file: GalleryFile | null) {
@@ -467,8 +501,13 @@ useEffect(() => {
                   sortedFiles.map(file => (
                     <tr key={file.id} className="border-b hover:bg-[#f3f4fe]">
                       <td className="py-3 px-3 flex items-center gap-3">
-                        {/* File type icon and preview, clickable to open modal */}
-                        <span className="inline-block bg-[#e0e7ff] rounded p-2 cursor-pointer" onClick={() => handleOpenModal(file)}>
+                        {/* File type icon and preview, left/right click actions */}
+                        <span
+                          className="inline-block bg-[#e0e7ff] rounded p-2 cursor-pointer"
+                          onClick={() => file.type === 'image' ? handleCopyUrl(file.url) : handleOpenModal(file)}
+                          onContextMenu={e => handleContextMenu(e, file)}
+                          title={file.type === 'image' ? 'Click to copy image URL' : 'Right click for options'}
+                        >
                           {file.type === 'image' ? (
                             <img src={file.url} alt={file.name} className="w-10 h-10 object-cover rounded" />
                           ) : file.type === 'file' ? (
@@ -487,6 +526,10 @@ useEffect(() => {
                       </td>
                       <td className="py-3 px-3">
                         <button className="text-[#ff4d4f] font-semibold mr-3 hover:underline" onClick={() => handleDeleteFile(file)}>Delete</button>
+                        <button className="text-[#6c63ff] font-semibold hover:underline ml-2" onClick={() => handleDownloadFile(file)}>Download</button>
+                        <button className={`ml-2 px-2 py-1 rounded ${selectedFiles.includes(file.id) ? 'bg-[#6c63ff] text-white' : 'bg-gray-100 text-[#6c63ff]'}`} onClick={() => handleSelectFile(file.id)}>
+                          {selectedFiles.includes(file.id) ? 'Selected' : 'Select'}
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -495,24 +538,43 @@ useEffect(() => {
             </table>
           </div>
         </div>
-        {/* Preview modal */}
+        {/* Preview modal (white, 2-column) */}
         {modalFile && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={() => setModalFile(null)}>
-    <div className="bg-white rounded-2xl p-8 shadow-lg relative" onClick={e => e.stopPropagation()}>
-      <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-900 text-xl" onClick={() => setModalFile(null)}>&times;</button>
-      <div className="flex flex-col items-center">
-        <div className="mb-4 text-lg font-bold text-gray-900">{modalFile.name}</div>
-        {modalFile.type === 'image' ? (
-          <img src={modalFile.url} alt={modalFile.name} className="max-w-md max-h-[60vh] rounded" />
-        ) : (
-          <a href={modalFile.url} target="_blank" rel="noopener noreferrer" className="text-[#6c63ff] underline">Open file</a>
+          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(247, 248, 250, 0.85)' }} onClick={() => setModalFile(null)}>
+            <div className="bg-white rounded-2xl p-8 shadow-lg relative max-w-3xl w-full flex flex-row" onClick={e => e.stopPropagation()}>
+              <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-900 text-xl" onClick={() => setModalFile(null)}>&times;</button>
+              <div className="flex-1 flex items-center justify-center">
+                {modalFile.type === 'image' ? (
+                  <img src={modalFile.url} alt={modalFile.name} className="max-w-xs max-h-[60vh] rounded" />
+                ) : (
+                  <a href={modalFile.url} target="_blank" rel="noopener noreferrer" className="text-[#6c63ff] underline text-lg">Open file</a>
+                )}
+              </div>
+              <div className="flex-1 flex flex-col justify-center pl-8">
+                <div className="mb-2 text-lg font-bold text-gray-900">{modalFile.name}</div>
+                <div className="mb-2 text-gray-700">Size: {modalFile.size ? `${(modalFile.size / 1024 / 1024).toFixed(2)} MB` : '--'}</div>
+                <div className="mb-2 text-gray-700">Uploaded by: {modalFile.uploader_email || '--'}</div>
+                <div className="mb-2 text-gray-700">Type: {modalFile.type}</div>
+                <div className="mb-2 text-gray-700">Uploaded at: {modalFile.uploaded_at ? new Date(modalFile.uploaded_at).toLocaleString() : '--'}</div>
+                <button className="mt-4 px-4 py-2 rounded bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition" onClick={() => handleDownloadFile(modalFile)}>Download</button>
+                <button className="mt-2 px-4 py-2 rounded bg-[#ff4d4f] text-white font-semibold shadow hover:bg-[#d43f3a] transition" onClick={() => { handleDeleteFile(modalFile); setModalFile(null); }}>Delete</button>
+              </div>
+            </div>
+          </div>
         )}
-        <div className="mt-4 text-gray-700">Size: {modalFile.size ? `${(modalFile.size / 1024 / 1024).toFixed(2)} MB` : '--'}</div>
-        <div className="mt-1 text-gray-700">Uploaded by: {modalFile.uploader_email || '--'}</div>
-      </div>
-    </div>
-  </div>
-)}
+
+        {/* Custom context menu for file actions */}
+        {contextMenu.visible && contextMenu.file && (
+          <div
+            className="fixed z-50 bg-white border border-[#e0e7ff] rounded shadow-lg py-2 px-4 flex flex-col"
+            style={{ top: contextMenu.y, left: contextMenu.x, minWidth: 160 }}
+          >
+            <button className="text-left py-2 px-2 hover:bg-[#f3f4fe] rounded" onClick={() => handleOpenModal(contextMenu.file!)}>Open</button>
+            <button className="text-left py-2 px-2 hover:bg-[#f3f4fe] rounded" onClick={() => handleSelectFile(contextMenu.file!.id)}>{selectedFiles.includes(contextMenu.file!.id) ? 'Unselect' : 'Select'}</button>
+            <button className="text-left py-2 px-2 hover:bg-[#f3f4fe] rounded" onClick={() => handleDownloadFile(contextMenu.file!)}>Download</button>
+            <button className="text-left py-2 px-2 hover:bg-[#f3f4fe] rounded text-[#ff4d4f]" onClick={() => { handleDeleteFile(contextMenu.file!); setContextMenu({ ...contextMenu, visible: false }); }}>Delete</button>
+          </div>
+        )}
       </main>
     </div>
   );
