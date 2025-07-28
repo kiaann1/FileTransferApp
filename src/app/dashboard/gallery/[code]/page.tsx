@@ -25,6 +25,9 @@ export default function GalleryPage() {
   const [settingsError, setSettingsError] = useState("");
   // Multi-select state
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  // Password modal state
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const router = useRouter();
   const { code } = useParams();
   type Gallery = {
