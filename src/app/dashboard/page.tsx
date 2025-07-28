@@ -117,16 +117,15 @@ export default function DashboardPage() {
   // Use user from context (provided by layout.tsx)
   // Remove client-side session check
 
+  // Fix infinite loop in galleries fetch
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     let isMounted = true;
-    (async () => {
-      // Fetch galleries where user is a member
+    const fetchGalleries = async () => {
       const { data: memberData, error: memberError } = await supabase
         .from("gallery_members")
         .select("gallery_id, galleries (id, name, code, owner_id)")
         .eq("user_id", user.id);
-      // Fetch galleries where user is the owner
       const { data: ownerData, error: ownerError } = await supabase
         .from("galleries")
         .select("id, name, code, owner_id")
@@ -142,7 +141,6 @@ export default function DashboardPage() {
       if (!ownerError && ownerData) {
         allGalleries = allGalleries.concat(ownerData);
       }
-      // Remove duplicates by gallery id
       const uniqueGalleries = Object.values(
         allGalleries.reduce((acc, g) => {
           acc[g.id] = g;
@@ -150,37 +148,60 @@ export default function DashboardPage() {
         }, {} as Record<string, Gallery>)
       );
       if (isMounted) setGalleries(uniqueGalleries);
-    })();
+    };
+    fetchGalleries();
     return () => { isMounted = false; };
-  }, [user]);
-  // Helper to fetch notifications (simulate for now)
+  }, [user?.id]);
+
+  // Fix infinite loop and polling in notifications fetch
+  // Only fetch once on mount, and use Supabase Realtime for updates
   useEffect(() => {
-    if (!user) return;
-    // Example: fetch notifications from Supabase (replace with your table/logic)
-    (async () => {
+    if (!user?.id) return;
+    let isMounted = true;
+    const fetchNotifications = async () => {
       const { data } = await supabase
         .from("gallery_notifications")
         .select("id, message")
         .eq("owner_id", user.id)
         .order("created_at", { ascending: false });
-      if (data) setNotifications(data);
-    })();
-  }, [user]);
+      if (isMounted && data) setNotifications(data);
+    };
+    fetchNotifications();
+    // Subscribe to realtime changes
+    const subscription = supabase
+      .channel('gallery_notifications_updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'gallery_notifications',
+        filter: `owner_id=eq.${user.id}`
+      }, payload => {
+        fetchNotifications();
+      })
+      .subscribe();
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(subscription);
+    };
+  }, [user?.id]);
 
   // Listen for new user joins (simulate real-time with polling or Supabase Realtime)
   useEffect(() => {
-    // Example: poll every 30s for new notifications
+    if (!user?.id) return;
+    let isMounted = true;
     const interval = setInterval(async () => {
-      if (!user) return;
       const { data } = await supabase
         .from("gallery_notifications")
         .select("id, message")
         .eq("owner_id", user.id)
         .order("created_at", { ascending: false });
-      if (data) setNotifications(data);
+      if (isMounted && data) setNotifications(data);
     }, 30000);
-    return () => clearInterval(interval);
-  }, [user]);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [user?.id]);
 
 
   // Clear notification handler
