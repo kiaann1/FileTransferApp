@@ -119,21 +119,22 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) return;
-    // Fetch galleries where user is a member
+    let isMounted = true;
     (async () => {
       const { data, error } = await supabase
         .from("gallery_members")
         .select("gallery_id, galleries (id, name, code, owner_id)")
         .eq("user_id", user.id);
-       if (!error && data) {
-         // Flatten and filter out null galleries
-         const allGalleries: Gallery[] = data
-           .map((row: { galleries: Gallery[] }) => row.galleries)
-           .flat()
-           .filter((g: Gallery | null): g is Gallery => g !== null);
-         setGalleries(allGalleries);
+      if (!error && data && isMounted) {
+        // Flatten and filter out null galleries
+        const allGalleries: Gallery[] = data
+          .map((row: { galleries: Gallery[] }) => row.galleries)
+          .flat()
+          .filter((g: Gallery | null): g is Gallery => g !== null);
+        setGalleries(allGalleries);
       }
     })();
+    return () => { isMounted = false; };
   }, [user]);
   // Helper to fetch notifications (simulate for now)
   useEffect(() => {
