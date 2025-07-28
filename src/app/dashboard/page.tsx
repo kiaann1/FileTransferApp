@@ -65,11 +65,44 @@ function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword, userId, a
       role="button"
       aria-label={`Open menu for ${gallery.name}`}
     >
+      {/* Top row: Owner badge and Star button */}
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          {isOwner && (
+            <span className="bg-[#6c63ff] text-white text-xs font-bold px-3 py-1 rounded-full shadow mr-2">Owner</span>
+          )}
+        </div>
+        <button
+          className={`p-2 rounded-full focus:outline-none transition ${starred ? 'bg-yellow-100' : 'hover:bg-gray-100'}`}
+          onClick={e => {
+            e.stopPropagation();
+            setStarred((v) => !v);
+          }}
+          aria-label={starred ? "Unstar Gallery" : "Star Gallery"}
+          title={starred ? "Unstar Gallery" : "Star Gallery"}
+        >
+          {/* Star SVG */}
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill={starred ? "#FFD700" : "#E5E7EB"} stroke="#FFD700" strokeWidth="1"/>
+          </svg>
+        </button>
+        <button
+          className="p-2 rounded-full hover:bg-gray-100 focus:outline-none ml-2"
+          onClick={e => {
+            e.stopPropagation();
+            setMenuOpen((v) => !v);
+          }}
+          aria-label="Gallery Settings"
+        >
+          {/* Better Cog SVG */}
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="#6B7280" d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7zm7.43-4.07l-1.43-.23a7.02 7.02 0 0 0-.51-1.23l.86-1.16a.5.5 0 0 0-.06-.66l-1.13-1.13a.5.5 0 0 0-.66-.06l-1.16.86a7.02 7.02 0 0 0-1.23-.51l-.23-1.43A.5.5 0 0 0 15 4h-2a.5.5 0 0 0-.5.43l-.23 1.43a7.02 7.02 0 0 0-1.23.51l-1.16-.86a.5.5 0 0 0-.66.06l-1.13 1.13a.5.5 0 0 0-.06.66l.86 1.16a7.02 7.02 0 0 0-.51 1.23l-1.43.23A.5.5 0 0 0 4 9v2c0 .25.18.46.43.5l1.43.23c.12.43.29.84.51 1.23l-.86 1.16a.5.5 0 0 0 .06.66l1.13 1.13a.5.5 0 0 0 .66.06l1.16-.86c.39.22.8.39 1.23.51l.23 1.43c.04.25.25.43.5.43h2c.25 0 .46-.18.5-.43l.23-1.43c.43-.12.84-.29 1.23-.51l1.16.86a.5.5 0 0 0 .66-.06l1.13-1.13a.5.5 0 0 0 .06-.66l-.86-1.16c.22-.39.39-.8.51-1.23l1.43-.23A.5.5 0 0 0 20 13v-2c0-.25-.18-.46-.43-.5z"/></svg>
+        </button>
+      </div>
       <a
         href={`/dashboard/gallery/${gallery.code}`}
         className="block"
       >
-        <div className="font-bold text-lg text-gray-900 mb-2">{gallery.name}</div>
+        <div className="font-bold text-lg text-gray-900 mb-2 mt-2">{gallery.name}</div>
         <div className="text-gray-500 text-sm">Code: {gallery.code}</div>
         {/* Gallery analytics */}
         {analytics && (
@@ -102,32 +135,6 @@ function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword, userId, a
           title="Share"
         >Share</button>
       </div>
-      {/* Star button */}
-      <button
-        className={`absolute top-4 left-12 p-2 rounded-full focus:outline-none transition ${starred ? 'bg-yellow-100' : 'hover:bg-gray-100'}`}
-        onClick={e => {
-          e.stopPropagation();
-          setStarred((v) => !v);
-        }}
-        aria-label={starred ? "Unstar Gallery" : "Star Gallery"}
-        title={starred ? "Unstar Gallery" : "Star Gallery"}
-      >
-        {/* Star SVG */}
-        <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill={starred ? "#FFD700" : "#E5E7EB"} stroke="#FFD700" strokeWidth="1"/>
-        </svg>
-      </button>
-      <button
-        className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 focus:outline-none"
-        onClick={e => {
-          e.stopPropagation();
-          setMenuOpen((v) => !v);
-        }}
-        aria-label="Gallery Settings"
-      >
-        {/* Better Cog SVG */}
-        <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="#6B7280" d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7zm7.43-4.07l-1.43-.23a7.02 7.02 0 0 0-.51-1.23l.86-1.16a.5.5 0 0 0-.06-.66l-1.13-1.13a.5.5 0 0 0-.66-.06l-1.16.86a7.02 7.02 0 0 0-1.23-.51l-.23-1.43A.5.5 0 0 0 15 4h-2a.5.5 0 0 0-.5.43l-.23 1.43a7.02 7.02 0 0 0-1.23.51l-1.16-.86a.5.5 0 0 0-.66.06l-1.13 1.13a.5.5 0 0 0-.06.66l.86 1.16a7.02 7.02 0 0 0-.51 1.23l-1.43.23A.5.5 0 0 0 4 9v2c0 .25.18.46.43.5l1.43.23c.12.43.29.84.51 1.23l-.86 1.16a.5.5 0 0 0 .06.66l1.13 1.13a.5.5 0 0 0 .66.06l1.16-.86c.39.22.8.39 1.23.51l.23 1.43c.04.25.25.43.5.43h2c.25 0 .46-.18.5-.43l.23-1.43c.43-.12.84-.29 1.23-.51l1.16.86a.5.5 0 0 0 .66-.06l1.13-1.13a.5.5 0 0 0 .06-.66l-.86-1.16c.22-.39.39-.8.51-1.23l1.43-.23A.5.5 0 0 0 20 13v-2c0-.25-.18-.46-.43-.5z"/></svg>
-      </button>
       {menuOpen && (
         <div ref={menuRef} className="absolute top-12 right-4 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
           <ul className="py-2">
@@ -546,10 +553,6 @@ export default function DashboardPage() {
                     onResetPassword={(gallery) => setResetPasswordModal({ open: true, gallery })}
                     userId={user?.id ?? null}
                   />
-                  {/* Owner badge */}
-                  {gallery.owner_id === user?.id && (
-                    <span className="absolute top-4 left-4 bg-[#6c63ff] text-white text-xs font-bold px-3 py-1 rounded-full shadow">Owner</span>
-                  )}
                   {/* Quick View button on hover */}
                   <a
                     href={`/dashboard/gallery/${gallery.code}`}
