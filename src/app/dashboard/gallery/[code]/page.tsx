@@ -13,6 +13,7 @@ type GalleryFile = {
   type: string;
   last_modified?: string | Date;
   uploader_email?: string;
+  uploaded_at?: string;
   // add other fields as needed
 };
 
@@ -121,8 +122,6 @@ export default function GalleryPage() {
     }
   }
 
-  // Removed duplicate handleFileUpload declaration
-
   const handleFileUpload = useCallback(async (filesList: File[] | FileList) => {
     if (!gallery) return;
     // Check authentication before uploading
@@ -160,6 +159,9 @@ export default function GalleryPage() {
         name: file.name,
         type: dbType,
         url: urlData?.publicUrl || null,
+        uploader_email: user.data.user.email,
+        uploaded_at: new Date(timestamp).toISOString(),
+        size: file.size,
       });
       if (!dbError) uploaded = true;
     }
@@ -285,6 +287,14 @@ useEffect(() => {
     { name: "Settings", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e7ff"/><rect x="10" y="6" width="4" height="12" rx="2" fill="#6c63ff"/></svg>, href: "/dashboard/settings" },
   ];
 
+  // Sort files by uploaded_at descending
+  const sortedFiles = [...files].sort((a, b) => {
+    if (a.uploaded_at && b.uploaded_at) {
+      return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
+    }
+    return 0;
+  });
+
   return (
     <div className="min-h-screen bg-[#f7f8fa] flex">
       {/* Sidebar */}
@@ -366,27 +376,22 @@ useEffect(() => {
                 </tr>
               </thead>
               <tbody>
-                {files.length === 0 ? (
+                {sortedFiles.length === 0 ? (
                   <tr><td colSpan={4} className="text-gray-400 text-center py-12 text-lg">No files uploaded yet.</td></tr>
                 ) : (
-                  [...files].sort((a, b) => {
-                    // Prefer descending by id (UUIDs are sortable by creation time if using v4, otherwise use timestamp if available)
-                    if (a.id < b.id) return 1;
-                    if (a.id > b.id) return -1;
-                    return 0;
-                  }).map(file => (
+                  sortedFiles.map(file => (
                     <tr key={file.id} className="border-b hover:bg-[#f3f4fe]">
                       <td className="py-3 px-3 flex items-center gap-3">
-                        {/* File type icon and preview */}
-                        {file.type === 'image' ? (
-                          <span className="inline-block bg-[#e0e7ff] rounded p-2">
+                        {/* File type icon and preview, clickable to open modal */}
+                        <span className="inline-block bg-[#e0e7ff] rounded p-2 cursor-pointer" onClick={() => handleOpenModal(file)}>
+                          {file.type === 'image' ? (
                             <img src={file.url} alt={file.name} className="w-10 h-10 object-cover rounded" />
-                          </span>
-                        ) : file.type === 'file' ? (
-                          <span className="inline-block bg-[#e0e7ff] rounded p-2"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg></span>
-                        ) : file.type === 'folder' ? (
-                          <span className="inline-block bg-[#fbbf24] rounded p-2"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="8" rx="3" fill="#fbbf24"/></svg></span>
-                        ) : null}
+                          ) : file.type === 'file' ? (
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg>
+                          ) : file.type === 'folder' ? (
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="8" rx="3" fill="#fbbf24"/></svg>
+                          ) : null}
+                        </span>
                         <span className="font-semibold text-gray-900">{file.name}</span>
                       </td>
                       {/* File size from metadata or fallback */}
@@ -406,6 +411,24 @@ useEffect(() => {
             </table>
           </div>
         </div>
+        {/* Preview modal */}
+        {modalFile && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={() => setModalFile(null)}>
+    <div className="bg-white rounded-2xl p-8 shadow-lg relative" onClick={e => e.stopPropagation()}>
+      <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-900 text-xl" onClick={() => setModalFile(null)}>&times;</button>
+      <div className="flex flex-col items-center">
+        <div className="mb-4 text-lg font-bold text-gray-900">{modalFile.name}</div>
+        {modalFile.type === 'image' ? (
+          <img src={modalFile.url} alt={modalFile.name} className="max-w-md max-h-[60vh] rounded" />
+        ) : (
+          <a href={modalFile.url} target="_blank" rel="noopener noreferrer" className="text-[#6c63ff] underline">Open file</a>
+        )}
+        <div className="mt-4 text-gray-700">Size: {modalFile.size ? `${(modalFile.size / 1024 / 1024).toFixed(2)} MB` : '--'}</div>
+        <div className="mt-1 text-gray-700">Uploaded by: {modalFile.uploader_email || '--'}</div>
+      </div>
+    </div>
+  </div>
+)}
       </main>
     </div>
   );
