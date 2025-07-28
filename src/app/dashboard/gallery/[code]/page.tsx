@@ -209,10 +209,13 @@ export default function GalleryPage() {
 
 // Fetch files helper
 async function fetchFiles(galleryId: string) {
-  const { data: filesData } = await supabase
+  const { data: filesData, error } = await supabase
     .from("gallery_files")
     .select("*")
     .eq("gallery_id", galleryId);
+  if (error) {
+    console.error('Error fetching files:', error);
+  }
   setFiles(filesData || []);
 }
 
@@ -246,11 +249,7 @@ useEffect(() => {
   let isMounted = true;
   async function fetchIfNeeded() {
     if (gallery && (!gallery.password || !showPasswordModal)) {
-      const { data: filesData } = await supabase
-        .from("gallery_files")
-        .select("*")
-        .eq("gallery_id", gallery.id);
-      if (isMounted) setFiles(filesData || []);
+      await fetchFiles(gallery.id);
     }
   }
   fetchIfNeeded();
@@ -313,8 +312,19 @@ useEffect(() => {
         {/* Topbar */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-extrabold text-gray-900 mb-1 tracking-tight">My Files & Assets</h1>
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-1 tracking-tight">{gallery?.name || "Gallery"}</h1>
             <div className="text-gray-400 font-medium">All your uploaded files, assets, and documents in one place.</div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-lg bg-[#f3f4fe] px-4 py-2 rounded-lg border border-[#b3b3ff]">{gallery?.code || "-"}</span>
+            <button
+              className="px-4 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base"
+              onClick={() => {
+                if (gallery?.code) {
+                  navigator.clipboard.writeText(gallery.code);
+                }
+              }}
+            >Copy</button>
           </div>
         </div>
         {/* Upload box */}
