@@ -121,18 +121,35 @@ export default function DashboardPage() {
     if (!user) return;
     let isMounted = true;
     (async () => {
-      const { data, error } = await supabase
+      // Fetch galleries where user is a member
+      const { data: memberData, error: memberError } = await supabase
         .from("gallery_members")
         .select("gallery_id, galleries (id, name, code, owner_id)")
         .eq("user_id", user.id);
-      if (!error && data && isMounted) {
-        // Flatten and filter out null galleries
-        const allGalleries: Gallery[] = data
+      // Fetch galleries where user is the owner
+      const { data: ownerData, error: ownerError } = await supabase
+        .from("galleries")
+        .select("id, name, code, owner_id")
+        .eq("owner_id", user.id);
+      let allGalleries: Gallery[] = [];
+      if (!memberError && memberData) {
+        const memberGalleries: Gallery[] = memberData
           .map((row: { galleries: Gallery[] }) => row.galleries)
           .flat()
           .filter((g: Gallery | null): g is Gallery => g !== null);
-        setGalleries(allGalleries);
+        allGalleries = allGalleries.concat(memberGalleries);
       }
+      if (!ownerError && ownerData) {
+        allGalleries = allGalleries.concat(ownerData);
+      }
+      // Remove duplicates by gallery id
+      const uniqueGalleries = Object.values(
+        allGalleries.reduce((acc, g) => {
+          acc[g.id] = g;
+          return acc;
+        }, {} as Record<string, Gallery>)
+      );
+      if (isMounted) setGalleries(uniqueGalleries);
     })();
     return () => { isMounted = false; };
   }, [user]);
