@@ -124,6 +124,7 @@ export default function GalleryPage() {
       return;
     }
     setUploading(true);
+    let uploaded = false;
     for (let i = 0; i < filesList.length; i++) {
       const file = filesList[i];
       const timestamp = Date.now();
@@ -146,15 +147,19 @@ export default function GalleryPage() {
       // Insert metadata into gallery_files table
       let dbType: 'image' | 'file' | 'folder' = 'file';
       if (file.type && file.type.startsWith('image')) dbType = 'image';
-      await supabase.from("gallery_files").insert({
+      const { error: dbError } = await supabase.from("gallery_files").insert({
         gallery_id: gallery.id, 
         name: file.name,
         type: dbType,
         url: urlData?.publicUrl || null,
       });
+      if (!dbError) uploaded = true;
     }
     setUploading(false);
-    fetchFiles(gallery.id);
+    // Always fetch files after upload
+    if (uploaded && gallery) {
+      await fetchFiles(gallery.id);
+    }
   }, [gallery]);
 
   // Hide context menu on click elsewhere
