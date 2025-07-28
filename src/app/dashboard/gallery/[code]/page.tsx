@@ -172,15 +172,14 @@ async function fetchFiles(galleryId: string) {
 // Fetch gallery by code (only minimal info, never expose user object)
 useEffect(() => {
   if (!code) return;
-  let cancelled = false;
+  let isMounted = true;
   const fetchGallery = async () => {
-    // Only fetch gallery info, never user object or metadata
     const { data: galleryData, error } = await supabase
       .from("galleries")
       .select("id, name, code, password")
       .eq("code", code)
       .single();
-    if (!cancelled) {
+    if (isMounted) {
       if (error || !galleryData) {
         router.replace("/dashboard");
         return;
@@ -193,14 +192,11 @@ useEffect(() => {
     }
   };
   fetchGallery();
-  // Paste handler for images/files
   function handlePaste(e: ClipboardEvent) {
     if (uploading) return;
-    // Only allow paste if not focused on an input/textarea
     const active = document.activeElement;
     if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
     const files: File[] = [];
-    // Try clipboardData.items first
     if (e.clipboardData && e.clipboardData.items) {
       for (let i = 0; i < e.clipboardData.items.length; i++) {
         const item = e.clipboardData.items[i];
@@ -210,7 +206,6 @@ useEffect(() => {
         }
       }
     }
-    // Fallback: clipboardData.files (for some browsers)
     if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
       for (let i = 0; i < e.clipboardData.files.length; i++) {
         const file = e.clipboardData.files[i];
@@ -223,18 +218,24 @@ useEffect(() => {
     }
   }
   document.addEventListener("paste", handlePaste);
-  return () => { cancelled = true; document.removeEventListener("paste", handlePaste); };
+  return () => { isMounted = false; document.removeEventListener("paste", handlePaste); };
 }, [code, handleFileUpload, router, uploading]);
 
   // Fetch files when gallery is set and not password protected, or when password modal is closed
   useEffect(() => {
-    // Prevent repeated fetches by checking if files are already loaded
-    if (gallery && (!gallery.password || !showPasswordModal)) {
-      if (files.length === 0) {
-        fetchFiles(gallery.id);
+    let isMounted = true;
+    async function fetchIfNeeded() {
+      if (gallery && (!gallery.password || !showPasswordModal)) {
+        const { data: filesData } = await supabase
+          .from("gallery_files")
+          .select("*")
+          .eq("gallery_id", gallery.id);
+        if (isMounted) setFiles(filesData || []);
       }
     }
-  }, [gallery, showPasswordModal, files.length]);
+    fetchIfNeeded();
+    return () => { isMounted = false; };
+  }, [gallery, showPasswordModal]);
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
