@@ -285,6 +285,10 @@ useEffect(() => {
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-[#e0e7ff] flex flex-col py-10 px-6 min-h-screen">
+        {/* Logo at top */}
+        <div className="mb-10 flex items-center justify-center">
+          <img src="/file.svg" alt="Logo" className="h-12 w-auto" />
+        </div>
         <nav className="flex flex-col gap-6">
           {sidebarNav.map(item => (
             <a
