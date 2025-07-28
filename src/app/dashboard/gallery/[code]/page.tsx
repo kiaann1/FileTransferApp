@@ -501,7 +501,8 @@ useEffect(() => {
                   sortedFiles.map(file => (
                     <tr
                       key={file.id}
-                      className={`border-b hover:bg-[#f3f4fe] ${selectedFiles.includes(file.id) ? 'border-4 border-[#6c63ff] bg-[#f3f4fe]' : ''}`}
+                      className={`hover:bg-[#f3f4fe] ${selectedFiles.includes(file.id) ? 'ring-4 ring-[#6c63ff] bg-[#f3f4fe]' : 'border-b'}`}
+                      style={selectedFiles.includes(file.id) ? { border: 'none' } : {}}
                     >
                       <td className="py-3 px-3 flex items-center gap-3">
                         {/* File type icon and preview, left/right click actions */}
@@ -524,12 +525,23 @@ useEffect(() => {
                       {/* File size from metadata or fallback */}
                       <td className="py-3 px-3 text-gray-700">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</td>
                       {/* Uploaded by: actual email if available */}
-                      <td className="py-3 px-3 flex items-center gap-3" style={{ verticalAlign: 'middle' }}>
-                        <span className="text-gray-700 font-medium flex items-center h-full">{file.uploader_email || '--'}</span>
+                      <td className="py-3 px-3 flex items-center gap-3 align-middle">
+                        <span className="text-gray-700 font-medium flex items-center h-full justify-center">{file.uploader_email || '--'}</span>
                       </td>
                       <td className="py-3 px-3">
                         <button className="text-[#ff4d4f] font-semibold mr-3 hover:underline" onClick={() => handleDeleteFile(file)}>Delete</button>
-                        <button className="text-[#6c63ff] font-semibold hover:underline ml-2" onClick={e => { e.stopPropagation(); handleDownloadFile(file); }}>Download</button>
+                        <button
+                          className="text-[#6c63ff] font-semibold hover:underline ml-2"
+                          onClick={e => {
+                            e.stopPropagation();
+                            const link = document.createElement('a');
+                            link.href = file.url;
+                            link.download = file.name;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                        >Download</button>
                         <button className={`ml-2 px-2 py-1 rounded ${selectedFiles.includes(file.id) ? 'bg-[#6c63ff] text-white' : 'bg-gray-100 text-[#6c63ff]'}`} onClick={() => handleSelectFile(file.id)}>
                           {selectedFiles.includes(file.id) ? 'Selected' : 'Select'}
                         </button>
