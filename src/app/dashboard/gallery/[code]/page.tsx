@@ -316,7 +316,7 @@ useEffect(() => {
             <div className="text-gray-400 font-medium">All your uploaded files, assets, and documents in one place.</div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="font-mono text-lg bg-[#f3f4fe] px-4 py-2 rounded-lg border border-[#b3b3ff]">{gallery?.code || "-"}</span>
+            <span className="font-mono text-lg bg-[#f3f4fe] px-4 py-2 rounded-lg border border-[#b3b3ff] text-black">{gallery?.code || "-"}</span>
             <button
               className="px-4 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base"
               onClick={() => {
@@ -342,35 +342,17 @@ useEffect(() => {
             </label>
           </div>
         </div>
+        {/* Debug output: show raw files array */}
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-900">
+          <strong>Debug: files array</strong>
+          <pre>{JSON.stringify(files, null, 2)}</pre>
+        </div>
         {/* File table */}
         <div className="bg-white rounded-2xl shadow p-8">
           <div className="flex items-center justify-between mb-6">
             <div className="text-xl font-bold text-gray-900">Attached Files <span className="text-xs text-[#6c63ff] font-semibold ml-2">{files.length} Total</span></div>
             <div className="flex gap-3 items-center">
-              <input type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#6c63ff]" />
-              <button className="px-5 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base" onClick={() => setSearchTerm("")}>Clear</button>
-              <form onSubmit={async e => {
-                e.preventDefault();
-                setCollaboratorError("");
-                setCollaboratorSuccess("");
-                if (!collaboratorEmail) {
-                  setCollaboratorError("Please enter an email.");
-                  return;
-                }
-                // Add collaborator logic (example: insert into collaborators table)
-                const { error } = await supabase.from("collaborators").insert({ gallery_id: gallery?.id, email: collaboratorEmail });
-                if (error) {
-                  setCollaboratorError("Failed to add collaborator.");
-                } else {
-                  setCollaboratorSuccess("Collaborator added!");
-                  setCollaboratorEmail("");
-                }
-              }} className="flex gap-2 items-center">
-                <input type="email" placeholder="Add Collaborator" value={collaboratorEmail} onChange={e => setCollaboratorEmail(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#6c63ff]" />
-                <button type="submit" className="px-5 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base">+ Add</button>
-              </form>
-              {collaboratorError && <span className="text-red-500 text-sm ml-2">{collaboratorError}</span>}
-              {collaboratorSuccess && <span className="text-green-500 text-sm ml-2">{collaboratorSuccess}</span>}
+              {/* Search and collaborator UI temporarily hidden for debugging */}
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -385,10 +367,10 @@ useEffect(() => {
                 </tr>
               </thead>
               <tbody>
-                {files.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
+                {files.length === 0 ? (
                   <tr><td colSpan={5} className="text-gray-400 text-center py-12 text-lg">No files uploaded yet.</td></tr>
                 ) : (
-                  files.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase())).map(file => (
+                  files.map(file => (
                     <tr key={file.id} className="border-b hover:bg-[#f3f4fe]">
                       <td className="py-3 px-3 flex items-center gap-3">
                         {/* File type icon and preview */}
