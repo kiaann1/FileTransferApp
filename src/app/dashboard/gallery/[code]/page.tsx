@@ -283,7 +283,21 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-[#f7f8fa] flex">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
-      {/* Sidebar ...existing code... */}
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r border-[#e0e7ff] flex flex-col py-10 px-6 min-h-screen">
+        <nav className="flex flex-col gap-6">
+          {sidebarNav.map(item => (
+            <a
+              key={item.name}
+              href={item.href}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#f3f4fe] text-gray-900 font-semibold transition"
+            >
+              <span>{item.icon}</span>
+              <span>{item.name}</span>
+            </a>
+          ))}
+        </nav>
+      </aside>
       <main className="flex-1 px-12 py-10">
         {/* Topbar */}
         <div className="flex items-center justify-between mb-8">
@@ -343,7 +357,7 @@ useEffect(() => {
             </div>
       {/* Settings Modal for password */}
       {showSettingsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onClick={() => setShowSettingsModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowSettingsModal(false)}>
           <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md relative" onClick={e => e.stopPropagation()}>
             <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowSettingsModal(false)} aria-label="Close">&times;</button>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Gallery Settings</h2>
