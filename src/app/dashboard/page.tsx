@@ -11,7 +11,6 @@ type GalleryAnalytics = {
   lastActivity: string | null;
   memberCount: number;
 };
-type StarredMap = Record<string, boolean>;
 type GalleryCardProps = {
   gallery: Gallery;
   analytics?: GalleryAnalytics;
@@ -173,8 +172,6 @@ export default function DashboardPage() {
   const user = useUser();
   // Removed unused loading state
   const [galleries, setGalleries] = useState<Gallery[]>([]);
-  // Starred galleries state (local)
-  const [starredMap, setStarredMap] = useState<StarredMap>({});
   // Gallery analytics state
   const [galleryAnalytics, setGalleryAnalytics] = useState<Record<string, GalleryAnalytics>>({});
   const [addUsersModal, setAddUsersModal] = useState<{ open: boolean; gallery: Gallery | null }>({ open: false, gallery: null });
@@ -186,8 +183,6 @@ export default function DashboardPage() {
 
   // Add notification state
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
-  const [invites, setInvites] = useState<{ id: string; gallery_id: string; gallery_name?: string; invited_by: string }[]>([]);
-  const [activity, setActivity] = useState<{ id: string; message: string; created_at: string }[]>([]);
 
   // Use user from context (provided by layout.tsx)
   // Remove client-side session check
@@ -335,7 +330,7 @@ export default function DashboardPage() {
               >
                 {/* Bell SVG */}
                 <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><path d="M14 25c1.657 0 3-1.343 3-3h-6c0 1.657 1.343 3 3 3zm7-7V12c0-3.314-2.686-6-6-6S9 8.686 9 12v6l-2 2v1h16v-1l-2-2z" fill="#6c63ff"/></svg>
-                {(notifications.length > 0 || invites.length > 0 || activity.length > 0) && (
+                {(notifications.length > 0) && (
                   <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
                 )}
               </button>
@@ -350,24 +345,6 @@ export default function DashboardPage() {
                     <button className="text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowNotifications(false)} aria-label="Close">&times;</button>
                   </div>
                   <ul className="max-h-64 overflow-y-auto">
-                    {invites.length > 0 && (
-                      <li className="px-4 py-2 border-b font-semibold text-[#6c63ff]">Team Invites</li>
-                    )}
-                    {invites.map(invite => (
-                      <li key={invite.id} className="flex flex-col px-4 py-2 border-b last:border-b-0">
-                        <span className="text-gray-700">Invited to <span className="font-bold">{invite.gallery_name}</span> by <span className="font-bold">{invite.invited_by}</span></span>
-                        <a href={`/dashboard/gallery/${invite.gallery_id}`} className="text-[#6c63ff] hover:underline text-sm mt-1">View Gallery</a>
-                      </li>
-                    ))}
-                    {activity.length > 0 && (
-                      <li className="px-4 py-2 border-b font-semibold text-green-700">Recent Activity</li>
-                    )}
-                    {activity.map(act => (
-                      <li key={act.id} className="flex flex-col px-4 py-2 border-b last:border-b-0">
-                        <span className="text-gray-700">{act.message}</span>
-                        <span className="text-xs text-gray-400">{new Date(act.created_at).toLocaleString()}</span>
-                      </li>
-                    ))}
                     {notifications.length > 0 && (
                       <li className="px-4 py-2 border-b font-semibold text-red-700">System Notifications</li>
                     )}
@@ -377,7 +354,7 @@ export default function DashboardPage() {
                         <button className="ml-2 text-gray-400 hover:text-red-600 text-lg font-bold" onClick={() => handleClearNotification(n.id)} aria-label="Clear notification">×</button>
                       </li>
                     ))}
-                    {notifications.length === 0 && invites.length === 0 && activity.length === 0 && (
+                    {notifications.length === 0 && (
                       <li className="px-4 py-8 text-center text-gray-400">No notifications</li>
                     )}
                   </ul>
@@ -400,11 +377,11 @@ export default function DashboardPage() {
               <span className="text-gray-500 mt-2">Total Galleries</span>
             </div>
             <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center border border-[#e0e7ff]">
-              <span className="text-3xl font-bold text-green-600">{invites.length}</span>
+              <span className="text-3xl font-bold text-green-600">{notifications.length}</span>
               <span className="text-gray-500 mt-2">Team Invites</span>
             </div>
             <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center border border-[#e0e7ff]">
-              <span className="text-3xl font-bold text-blue-900">{activity.length}</span>
+              <span className="text-3xl font-bold text-blue-900">{notifications.length}</span>
               <span className="text-gray-500 mt-2">Recent Activity</span>
             </div>
           </div>
@@ -536,11 +513,7 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
               {/* Sort galleries: starred first */}
-              {[...galleries].sort((a, b) => {
-                const aStar = starredMap[a.id] ? 1 : 0;
-                const bStar = starredMap[b.id] ? 1 : 0;
-                return bStar - aStar;
-              }).map(gallery => (
+              {[...galleries].map(gallery => (
                 <div className="relative group" key={gallery.id}>
                   <GalleryCard
                     gallery={gallery}
@@ -828,5 +801,8 @@ export default function DashboardPage() {
               </form>
             </div>
           </div>
-        )}</div>
-      )}
+        )}
+      </div>
+    </div>
+  );
+}

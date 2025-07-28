@@ -23,10 +23,6 @@ export default function GalleryPage() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsPassword, setSettingsPassword] = useState("");
   const [settingsError, setSettingsError] = useState("");
-  // Folder modal state
-  const [activeFolder, setActiveFolder] = useState<GalleryFile | null>(null);
-  const [folderFiles, setFolderFiles] = useState<GalleryFile[]>([]);
-  const [folderUploading, setFolderUploading] = useState(false);
   // Multi-select state
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const router = useRouter();
@@ -40,49 +36,24 @@ export default function GalleryPage() {
   };
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
-  const [fetchError, setFetchError] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [passwordInput, setPasswordInput] = useState("");
-  const [passwordError, setPasswordError] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [uploading, setUploading] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'images' | 'files' | 'folders'>('all');
   // Context menu and modal state
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; file: GalleryFile | null }>({ visible: false, x: 0, y: 0, file: null });
   const [modalFile, setModalFile] = useState<GalleryFile | null>(null);
-  const [modalFileSize, setModalFileSize] = useState<number | null>(null);
-  const [comments, setComments] = useState<string[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [toastMsg, setToastMsg] = useState<string>("");
-  const [accordionTab, setAccordionTab] = useState<'meta' | 'comments'>('meta');
   // New Folder modal state
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderError, setNewFolderError] = useState("");
-  // Collaborator state
-  const [collaboratorEmail, setCollaboratorEmail] = useState("");
-  const [collaboratorError, setCollaboratorError] = useState("");
-  const [collaboratorSuccess, setCollaboratorSuccess] = useState("");
   
 
   // Open modal handler
   async function handleOpenModal(file: GalleryFile) {
     setModalFile(file);
-    // Try to get file size from Supabase Storage if not present
-    if (!file.size) {
-      const filePath = file.url?.split('/').slice(-2).join('/');
-      const { data } = await supabase.storage.from('gallery-files').list(filePath.split('/')[0], { search: filePath.split('/')[1] });
-      if (data && data.length > 0) setModalFileSize(data[0].metadata.size || null);
-      else setModalFileSize(null);
-    } else {
-      setModalFileSize(file.size);
-    }
-    setComments([]); // Reset comments for demo
   }
 
-  // Delete file handler
   async function handleDeleteFile(file: GalleryFile | null) {
     if (!file) return;
     if (!window.confirm(`Delete ${file.name}? This cannot be undone.`)) return;
@@ -91,31 +62,6 @@ export default function GalleryPage() {
     const filePath = urlParts.slice(urlParts.length - 2).join('/');
     await supabase.storage.from('gallery-files').remove([filePath]);
     await supabase.from('gallery_files').delete().eq('id', file.id);
-    if (gallery) {
-      fetchFiles(gallery.id);
-    }
-  }
-
-  // Bulk delete handler
-  async function handleBulkDelete() {
-    if (selectedFiles.length === 0) return;
-    if (!window.confirm(`Delete ${selectedFiles.length} selected file(s)? This cannot be undone.`)) return;
-    // Get file objects
-    const filesToDelete = files.filter(f => selectedFiles.includes(f.id));
-    // Remove from bucket
-    const filePaths = filesToDelete
-      .map(file => {
-        if (!file.url) return undefined;
-        const urlParts = file.url.split('/');
-        return urlParts.slice(urlParts.length - 2).join('/');
-      })
-      .filter((p): p is string => typeof p === 'string');
-    if (filePaths.length > 0) {
-      await supabase.storage.from('gallery-files').remove(filePaths);
-    }
-    // Remove from DB (single query for all IDs)
-    await supabase.from('gallery_files').delete().in('id', selectedFiles);
-    setSelectedFiles([]);
     if (gallery) {
       fetchFiles(gallery.id);
     }
@@ -222,11 +168,8 @@ async function fetchFiles(galleryId: string) {
     .select("*")
     .eq("gallery_id", galleryId);
   if (error) {
-    setFetchError(error.message || JSON.stringify(error));
     console.error('Error fetching files:', error);
-  } else {
-    setFetchError("");
-  }
+  } 
   setFiles(filesData || []);
 }
 

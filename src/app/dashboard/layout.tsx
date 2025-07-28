@@ -23,8 +23,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   try {
     // Validate and decode JWT
     const jwtSecret = process.env.JWT_SECRET || "changeme";
-    const payload = jwt.verify(sessionCookie.value, jwtSecret);
-    if (typeof payload === "object" && payload !== null) {
+    const decoded = jwt.verify(sessionCookie.value, jwtSecret);
+    if (typeof decoded === "object" && decoded !== null) {
+      const payload = decoded;
       user = {
         id: (payload as { id: string }).id,
         email: (payload as { email: string }).email,
