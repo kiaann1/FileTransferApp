@@ -499,7 +499,10 @@ useEffect(() => {
                   <tr><td colSpan={4} className="text-gray-400 text-center py-12 text-lg">No files uploaded yet.</td></tr>
                 ) : (
                   sortedFiles.map(file => (
-                    <tr key={file.id} className="border-b hover:bg-[#f3f4fe]">
+                    <tr
+                      key={file.id}
+                      className={`border-b hover:bg-[#f3f4fe] ${selectedFiles.includes(file.id) ? 'border-4 border-[#6c63ff] bg-[#f3f4fe]' : ''}`}
+                    >
                       <td className="py-3 px-3 flex items-center gap-3">
                         {/* File type icon and preview, left/right click actions */}
                         <span
@@ -521,12 +524,12 @@ useEffect(() => {
                       {/* File size from metadata or fallback */}
                       <td className="py-3 px-3 text-gray-700">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</td>
                       {/* Uploaded by: actual email if available */}
-                      <td className="py-3 px-3 flex items-center gap-3">
-                        <span className="text-gray-700 font-medium">{file.uploader_email || '--'}</span>
+                      <td className="py-3 px-3 flex items-center gap-3" style={{ verticalAlign: 'middle' }}>
+                        <span className="text-gray-700 font-medium flex items-center h-full">{file.uploader_email || '--'}</span>
                       </td>
                       <td className="py-3 px-3">
                         <button className="text-[#ff4d4f] font-semibold mr-3 hover:underline" onClick={() => handleDeleteFile(file)}>Delete</button>
-                        <button className="text-[#6c63ff] font-semibold hover:underline ml-2" onClick={() => handleDownloadFile(file)}>Download</button>
+                        <button className="text-[#6c63ff] font-semibold hover:underline ml-2" onClick={e => { e.stopPropagation(); handleDownloadFile(file); }}>Download</button>
                         <button className={`ml-2 px-2 py-1 rounded ${selectedFiles.includes(file.id) ? 'bg-[#6c63ff] text-white' : 'bg-gray-100 text-[#6c63ff]'}`} onClick={() => handleSelectFile(file.id)}>
                           {selectedFiles.includes(file.id) ? 'Selected' : 'Select'}
                         </button>
