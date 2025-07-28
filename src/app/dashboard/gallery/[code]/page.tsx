@@ -164,10 +164,8 @@ export default function GalleryPage() {
         size: file.size,
       }).select();
       if (dbError) {
-        console.error('DB insert error:', dbError);
         alert(`Failed to insert ${file.name} into DB: ${dbError.message}`);
       } else {
-        console.log('DB insert success:', dbData);
         uploaded = true;
       }
     }
@@ -364,14 +362,7 @@ useEffect(() => {
           </div>
         </div>
         {/* Debug output: show raw files, sortedFiles, and gallery object */}
-        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-900">
-          <strong>Debug: files array</strong>
-          <pre>{JSON.stringify(files, null, 2)}</pre>
-          <strong>Debug: sortedFiles array</strong>
-          <pre>{JSON.stringify(sortedFiles, null, 2)}</pre>
-          <strong>Debug: gallery object</strong>
-          <pre>{JSON.stringify(gallery, null, 2)}</pre>
-        </div>
+        {/* ...existing code... */}
         {/* File table */}
         <div className="bg-white rounded-2xl shadow p-8">
           <div className="flex items-center justify-between mb-6">
@@ -413,7 +404,6 @@ useEffect(() => {
                       <td className="py-3 px-3 text-gray-700">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</td>
                       {/* Uploaded by: actual email if available */}
                       <td className="py-3 px-3 flex items-center gap-3">
-                        <span className="inline-block w-9 h-9 rounded-full bg-[#e0e7ff] flex items-center justify-center text-[#6c63ff] font-bold text-lg">{file.name[0]?.toUpperCase() || '?'}</span>
                         <span className="text-gray-700 font-medium">{file.uploader_email || '--'}</span>
                       </td>
                       <td className="py-3 px-3">
