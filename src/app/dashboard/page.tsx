@@ -4,13 +4,13 @@ import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { useUser } from "./user-context";
+
 type Gallery = { id: string; name: string; code: string; password?: string; owner_id: string };
 type GalleryAnalytics = {
   fileCount: number;
   lastActivity: string | null;
   memberCount: number;
 };
-// Add starred property for local state
 type StarredMap = Record<string, boolean>;
 type GalleryCardProps = {
   gallery: Gallery;
@@ -21,12 +21,11 @@ type GalleryCardProps = {
   userId: string | null;
 };
 
-function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword, userId }: GalleryCardProps) {
+function GalleryCard({ gallery, onDelete, onAddUsers, onResetPassword, userId, analytics }: GalleryCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   // Star state is passed as prop
   const [starred, setStarred] = useState(false);
-  // Accept analytics as prop
-  const { analytics } = arguments[0];
+        // Accept analytics as prop (from destructuring)
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
