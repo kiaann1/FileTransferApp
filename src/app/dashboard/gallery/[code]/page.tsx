@@ -357,6 +357,15 @@ useEffect(() => {
             </label>
           </div>
         </div>
+        {/* Debug output: show raw files, sortedFiles, and gallery object */}
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-900">
+          <strong>Debug: files array</strong>
+          <pre>{JSON.stringify(files, null, 2)}</pre>
+          <strong>Debug: sortedFiles array</strong>
+          <pre>{JSON.stringify(sortedFiles, null, 2)}</pre>
+          <strong>Debug: gallery object</strong>
+          <pre>{JSON.stringify(gallery, null, 2)}</pre>
+        </div>
         {/* File table */}
         <div className="bg-white rounded-2xl shadow p-8">
           <div className="flex items-center justify-between mb-6">
