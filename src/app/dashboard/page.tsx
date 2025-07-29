@@ -168,6 +168,7 @@ export default function DashboardPage() {
   const [joinError, setJoinError] = useState("");
   const [joinPassword, setJoinPassword] = useState("");
   const [joinNeedsPassword, setJoinNeedsPassword] = useState(false);
+  const [showUsernameSuccess, setShowUsernameSuccess] = useState(false);
   const router = useRouter();
   const user = useUser();
   // Removed unused loading state
@@ -320,22 +321,51 @@ export default function DashboardPage() {
               <div>
                 <div className="text-gray-700">Signed in as <span className="font-semibold text-[#6c63ff]">{user.user_metadata?.username || user.email}</span></div>
                 <form
-                onSubmit={async e => {
-                  e.preventDefault();
-                  const input = (e.currentTarget.elements.namedItem('username') as HTMLInputElement | null);
-                  const username = input?.value.trim() || "";
-                  if (!username) return;
-                  // Update user_metadata in Supabase
-                  const { error } = await supabase.auth.updateUser({ data: { username } });
-                  if (!error) {
-                    user.user_metadata = { ...user.user_metadata, username };
-                    router.refresh && router.refresh();
-                  }
-                }}
-                className="mt-2 flex gap-2 items-center"
-              >
-                <input name="username" type="text" defaultValue={user.user_metadata?.username || ""} placeholder="Set username" className="border rounded px-2 py-1 text-sm" />
-                <button type="submit" className="px-3 py-1 rounded bg-[#6c63ff] text-white text-sm font-semibold">Save</button>
+                  onSubmit={async e => {
+                    e.preventDefault();
+                    const input = (e.currentTarget.elements.namedItem('username') as HTMLInputElement | null);
+                    const username = input?.value.trim() || "";
+                    if (!username) return;
+                    // Update user_metadata in Supabase
+                    const { error } = await supabase.auth.updateUser({ data: { username } });
+                    if (!error) {
+                      user.user_metadata = { ...user.user_metadata, username };
+                      setShowUsernameSuccess(true);
+                      setTimeout(() => setShowUsernameSuccess(false), 2000);
+                      // Force user context to refresh so username updates everywhere
+                      if (typeof window !== 'undefined') {
+                        window.location.reload();
+                      } else {
+                        router.refresh && router.refresh();
+                      }
+                    }
+                  }}
+                  className="mt-4 flex flex-col gap-2 items-start bg-[#f3f4fe] border border-[#e0e7ff] rounded-xl p-4 shadow-sm w-full max-w-xs"
+                >
+                  <label htmlFor="username" className="font-medium text-gray-800 flex items-center gap-2 mb-1">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="#6c63ff"/><rect x="6" y="16" width="12" height="4" rx="2" fill="#b3b3ff"/></svg>
+                    Username
+                  </label>
+                  <div className="flex gap-2 w-full">
+                    <input
+                      id="username"
+                      name="username"
+                      type="text"
+                      defaultValue={user.user_metadata?.username || ""}
+                      placeholder="Set username"
+                      className="border border-[#b3b3ff] rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#6c63ff] bg-white"
+                    />
+                    <button type="submit" className="px-4 py-2 rounded-lg bg-[#6c63ff] text-white text-sm font-semibold shadow hover:bg-[#5548c8] transition flex items-center gap-1">
+                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Save
+                    </button>
+                  </div>
+                  {showUsernameSuccess && (
+                    <div className="text-green-600 text-xs mt-1 flex items-center gap-1">
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Username updated!
+                    </div>
+                  )}
                 </form>
               </div>
             )}
