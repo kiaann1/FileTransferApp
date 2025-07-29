@@ -1,8 +1,15 @@
-import { createClient } from '../../utils/supabase/server';
+"use client";
+import { supabase } from "../../lib/supabaseClient";
+import React, { useEffect, useState } from "react";
 
-export default async function Instruments() {
-  const supabase = await createClient();
-  const { data: instruments } = await supabase.from("instruments").select();
-
-  return <pre>{JSON.stringify(instruments, null, 2)}</pre>
+export default function Instruments() {
+  const [instruments, setInstruments] = useState<any[]>([]);
+  useEffect(() => {
+    const fetchInstruments = async () => {
+      const { data } = await supabase.from("instruments").select();
+      setInstruments(data ?? []);
+    };
+    fetchInstruments();
+  }, []);
+  return <pre>{JSON.stringify(instruments, null, 2)}</pre>;
 }

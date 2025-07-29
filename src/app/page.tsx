@@ -40,7 +40,9 @@ export default function HomePage() {
           <span className="font-bold text-xl text-[#6c63ff]">FileTransfer</span>
         </div>
         <div className="flex gap-4">
-          <Link href="/dashboard" className="px-4 py-2 rounded bg-[#6c63ff] text-white font-medium hover:bg-[#5548c8] transition">Dashboard</Link>
+          {loggedIn && (
+            <Link href="/dashboard" className="px-4 py-2 rounded bg-[#6c63ff] text-white font-medium hover:bg-[#5548c8] transition">Dashboard</Link>
+          )}
           {loggedIn ? (
             <button
               onClick={handleLogout}
