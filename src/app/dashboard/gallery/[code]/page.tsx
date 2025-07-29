@@ -170,7 +170,6 @@ export default function GalleryPage() {
         toast(`Failed to insert ${file.name} into DB: ${dbError.message}`, { type: "error" });
       } else {
         uploaded = true;
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
         toast(`Uploaded ${file.name}`, { type: "success" });
       }
     }
