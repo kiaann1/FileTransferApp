@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabaseClient";
 
-import type { User } from '@supabase/supabase-js';
-
+  // Mobile menu state must be above return for JSX scope
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 type GalleryFile = {
   id: string;
   name: string;
@@ -317,13 +317,52 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-[#f7f8fa] flex flex-col md:flex-row">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-[#e0e7ff] flex flex-row md:flex-col py-4 md:py-10 px-2 md:px-6 min-h-[60px] md:min-h-screen items-center md:items-start justify-between md:justify-start">
-        {/* Logo at top */}
-        <div className="mb-0 md:mb-10 flex items-center justify-center w-full">
-          <img src="/file.svg" alt="Logo" className="h-10 md:h-12 w-auto" />
+      {/* Mobile pop-out menu (drawer) */}
+      <div className="md:hidden w-full">
+        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e0e7ff]">
+          <img src="/file.svg" alt="Logo" className="h-10 w-auto" />
+          <button
+            className="p-2 rounded-full hover:bg-[#f3f4fe] focus:outline-none"
+            aria-label="Open menu"
+            onClick={() => setShowMobileMenu(true)}
+          >
+            {/* Hamburger icon */}
+            <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect y="5" width="24" height="2" rx="1" fill="#6c63ff"/><rect y="11" width="24" height="2" rx="1" fill="#6c63ff"/><rect y="17" width="24" height="2" rx="1" fill="#6c63ff"/></svg>
+          </button>
         </div>
-        <nav className="flex flex-row md:flex-col gap-2 md:gap-6 w-full justify-center md:justify-start">
+        {/* Drawer menu */}
+        {showMobileMenu && (
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex" onClick={() => setShowMobileMenu(false)}>
+            <div className="bg-white w-64 h-full shadow-lg flex flex-col p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-8">
+                <img src="/file.svg" alt="Logo" className="h-10 w-auto" />
+                <button className="p-2 rounded-full hover:bg-[#f3f4fe]" aria-label="Close menu" onClick={() => setShowMobileMenu(false)}>
+                  <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round"/></svg>
+                </button>
+              </div>
+              <nav className="flex flex-col gap-6">
+                {sidebarNav.map(item => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#f3f4fe] text-gray-900 font-semibold transition"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.name}</span>
+                  </a>
+                ))}
+              </nav>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex md:w-64 bg-white border-r border-[#e0e7ff] flex-col py-10 px-6 min-h-screen items-start justify-start">
+        <div className="mb-10 flex items-center justify-center w-full">
+          <img src="/file.svg" alt="Logo" className="h-12 w-auto" />
+        </div>
+        <nav className="flex flex-col gap-6 w-full justify-start">
           {sidebarNav.map(item => (
             <a
               key={item.name}
@@ -336,6 +375,8 @@ useEffect(() => {
           ))}
         </nav>
       </aside>
+  // Mobile menu state
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
       <main className="flex-1 px-2 md:px-12 py-4 md:py-10">
         {/* Topbar */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-6 md:mb-8">
@@ -610,19 +651,22 @@ useEffect(() => {
             </table>
           </div>
         </div>
-        {/* Preview modal (white, 2-column) */}
+        {/* Preview modal (responsive layout) */}
         {modalFile && (
           <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(247, 248, 250, 0.85)' }} onClick={() => setModalFile(null)}>
-            <div className="bg-white rounded-2xl p-8 shadow-lg relative max-w-3xl w-full flex flex-row" onClick={e => e.stopPropagation()}>
+            <div
+              className="bg-white rounded-2xl p-8 shadow-lg relative max-w-3xl w-full flex flex-col md:flex-row"
+              onClick={e => e.stopPropagation()}
+            >
               <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-900 text-xl" onClick={() => setModalFile(null)}>&times;</button>
-              <div className="flex-1 flex items-center justify-center">
+              <div className="flex-1 flex items-center justify-center mb-8 md:mb-0">
                 {modalFile.type === 'image' ? (
-                  <img src={modalFile.url} alt={modalFile.name} className="max-w-xs max-h-[60vh] rounded" />
+                  <img src={modalFile.url} alt={modalFile.name} className="max-w-xs max-h-[60vh] rounded mx-auto" />
                 ) : (
                   <a href={modalFile.url} target="_blank" rel="noopener noreferrer" className="text-[#6c63ff] underline text-lg">Open file</a>
                 )}
               </div>
-              <div className="flex-1 flex flex-col justify-center pl-8">
+              <div className="flex-1 flex flex-col justify-center pl-0 md:pl-8">
                 <div className="mb-2 text-base md:text-lg font-bold text-gray-900">{modalFile.name}</div>
                 <div className="mb-2 text-gray-700 text-sm md:text-base">Size: {modalFile.size ? `${(modalFile.size / 1024 / 1024).toFixed(2)} MB` : '--'}</div>
                 <div className="mb-2 text-gray-700 text-sm md:text-base">Uploaded by: {modalFile.uploader_email || '--'}</div>
