@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabaseClient";
+import Image from "next/image";
 
 // ...existing code...
 
@@ -157,7 +158,7 @@ export default function GalleryPage() {
       // Insert metadata into gallery_files table
       let dbType: 'file' | 'image' | 'folder' = 'file';
       if (file.type && file.type.startsWith('image')) dbType = 'image';
-      const { data: dbData, error: dbError } = await supabase.from("gallery_files").insert({
+      const { error: dbError } = await supabase.from("gallery_files").insert({
         gallery_id: gallery.id, 
         name: file.name,
         type: dbType,
@@ -233,40 +234,35 @@ async function fetchFiles(galleryId: string) {
 
 // Fix infinite loop in gallery and files fetch
 useEffect(() => {
-  if (!code || !user) return;
-  let isMounted = true;
   const fetchGallery = async () => {
     const { data: galleryData, error } = await supabase
       .from("galleries")
       .select("id, name, code, password")
       .eq("code", code)
       .single();
-    if (isMounted) {
-      if (error || !galleryData) {
-        router.replace("/dashboard");
-        return;
-      }
-      setGallery(galleryData);
-      if (galleryData.password) {
-        setShowPasswordModal(true);
-      }
-      setLoading(false);
+    if (error || !galleryData) {
+      router.replace("/dashboard");
+      return;
     }
+    setGallery(galleryData);
+    if (galleryData.password) {
+      setShowPasswordModal(true);
+    }
+    setLoading(false);
   };
-  fetchGallery();
-  return () => { isMounted = false; };
-}, [code, user]);
+  if (code && user && router) {
+    fetchGallery();
+  }
+}, [code, user, router]);
 
 useEffect(() => {
-  let isMounted = true;
   async function fetchIfNeeded() {
     if (gallery && (!gallery.password || !showPasswordModal)) {
       await fetchFiles(gallery.id);
     }
   }
   fetchIfNeeded();
-  return () => { isMounted = false; };
-}, [gallery?.id, showPasswordModal]);
+}, [gallery, showPasswordModal]);
 
   // Removed unused handlePasswordSubmit
 
@@ -323,7 +319,7 @@ useEffect(() => {
       {/* Mobile pop-out menu (drawer) */}
       <div className="md:hidden w-full">
         <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e0e7ff]">
-          <img src="/file.svg" alt="Logo" className="h-10 w-auto" />
+          <Image src="/file.svg" alt="Logo" width={40} height={40} className="h-10 w-auto" />
           <button
             className="p-2 rounded-full hover:bg-[#f3f4fe] focus:outline-none"
             aria-label="Open menu"
@@ -338,7 +334,7 @@ useEffect(() => {
           <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex" onClick={() => setShowMobileMenu(false)}>
             <div className="bg-white w-64 h-full shadow-lg flex flex-col p-6" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-8">
-                <img src="/file.svg" alt="Logo" className="h-10 w-auto" />
+                <Image src="/file.svg" alt="Logo" width={40} height={40} className="h-10 w-auto" />
                 <button className="p-2 rounded-full hover:bg-[#f3f4fe]" aria-label="Close menu" onClick={() => setShowMobileMenu(false)}>
                   <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round"/></svg>
                 </button>
@@ -363,7 +359,7 @@ useEffect(() => {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:w-64 bg-white border-r border-[#e0e7ff] flex-col py-10 px-6 min-h-screen items-start justify-start">
         <div className="mb-10 flex items-center justify-center w-full">
-          <img src="/file.svg" alt="Logo" className="h-12 w-auto" />
+          <Image src="/file.svg" alt="Logo" width={40} height={40} className="h-10 w-auto" />
         </div>
         <nav className="flex flex-col gap-6 w-full justify-start">
           {sidebarNav.map(item => (
@@ -378,8 +374,6 @@ useEffect(() => {
           ))}
         </nav>
       </aside>
-  // Mobile menu state
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
       <main className="flex-1 px-2 md:px-12 py-4 md:py-10">
         {/* Topbar */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-6 md:mb-8">
@@ -534,124 +528,120 @@ useEffect(() => {
               {/* Search and collaborator UI temporarily hidden for debugging */}
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm md:text-base">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-3 px-3 font-semibold text-gray-600">File Name</th>
-                  <th className="py-3 px-3 font-semibold text-gray-600">File Size</th>
-                  <th className="py-3 px-3 font-semibold text-gray-600">Uploaded By</th>
-                  <th className="py-3 px-3 font-semibold text-gray-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedFiles.length === 0 ? (
-                  <tr><td colSpan={4} className="text-gray-400 text-center py-12 text-lg">No files uploaded yet.</td></tr>
-                ) : (
-                  sortedFiles.map(file => (
-                    <tr
-                      key={file.id}
-                      className={`hover:bg-[#f3f4fe] ${selectedFiles.includes(file.id) ? 'border-4 border-[#6c63ff] bg-[#f3f4fe]' : 'border-b'}`}
-                      style={selectedFiles.includes(file.id) ? { borderColor: '#6c63ff' } : {}}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {sortedFiles.length === 0 ? (
+              <div className="col-span-4 text-gray-400 text-center py-12 text-lg">No files uploaded yet.</div>
+            ) : (
+              sortedFiles.map(file => (
+                <div
+                  key={file.id}
+                  className={`bg-[#f3f4fe] rounded-2xl shadow p-4 flex flex-col items-center justify-start relative border transition-all ${selectedFiles.includes(file.id) ? 'border-4 border-[#6c63ff]' : 'border border-[#e0e7ff]'}`}
+                  style={selectedFiles.includes(file.id) ? { borderColor: '#6c63ff' } : {}}
+                  onContextMenu={e => handleContextMenu(e, file)}
+                >
+                  <span
+                    className="inline-block bg-[#e0e7ff] rounded p-2 cursor-pointer mb-2"
+                    onClick={async () => {
+                      if (file.type === 'image') {
+                        // On mobile, open modal instead of copy
+                        if (window.matchMedia('(pointer: coarse)').matches) {
+                          handleOpenModal(file);
+                          return;
+                        }
+                        try {
+                          const response = await fetch(file.url);
+                          const blob = await response.blob();
+                          if (navigator.clipboard && window.ClipboardItem) {
+                            await navigator.clipboard.write([
+                              new window.ClipboardItem({ [blob.type]: blob })
+                            ]);
+                            toast('Image copied to clipboard!', { type: 'success' });
+                          } else if (navigator.clipboard) {
+                            // Fallback: copy image URL
+                            await navigator.clipboard.writeText(file.url);
+                            toast('Image URL copied!', { type: 'success' });
+                          } else {
+                            handleOpenModal(file);
+                          }
+                        } catch {
+                          // Fallback: copy image URL if possible
+                          if (navigator.clipboard) {
+                            await navigator.clipboard.writeText(file.url);
+                            toast('Image URL copied!', { type: 'success' });
+                          } else {
+                            handleOpenModal(file);
+                          }
+                        }
+                      } else {
+                        handleOpenModal(file);
+                      }
+                    }}
+                    onTouchStart={e => {
+                      // Long-press to open modal on mobile
+                      if (window.matchMedia('(pointer: coarse)').matches) {
+                        const timer = setTimeout(() => handleOpenModal(file), 500);
+                        const clear = () => clearTimeout(timer);
+                        e.target.addEventListener('touchend', clear, { once: true });
+                        e.target.addEventListener('touchmove', clear, { once: true });
+                      }
+                    }}
+                    title={file.type === 'image' ? 'Tap to copy or hold to open' : 'Right click for options'}
+                  >
+                    {file.type === 'image' ? (
+                      <Image src={file.url} alt={file.name} width={160} height={160} className="w-40 h-40 object-cover rounded" />
+                    ) : file.type === 'file' ? (
+                      <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg>
+                    ) : file.type === 'folder' ? (
+                      <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="8" rx="3" fill="#fbbf24"/></svg>
+                    ) : null}
+                  </span>
+                  <div className="w-full flex flex-col items-center justify-center mb-2">
+                    <span className="font-semibold text-gray-900 text-base text-center break-words w-full">{file.name}</span>
+                    <span className="text-gray-700 text-sm">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</span>
+                    <span className="text-gray-700 text-sm">{file.uploader_email || '--'}</span>
+                  </div>
+                  <div className="flex gap-4 items-center justify-center w-full mt-2">
+                    <button className="text-[#ff4d4f] hover:bg-[#ffeaea] p-2 rounded-full" title="Delete" onClick={() => handleDeleteFile(file)}>
+                      <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6" stroke="#ff4d4f" strokeWidth="2" strokeLinecap="round"/></svg>
+                    </button>
+                    <button
+                      className="text-[#6c63ff] hover:bg-[#e0e7ff] p-2 rounded-full"
+                      title="Download"
+                      onClick={async e => {
+                        e.stopPropagation();
+                        try {
+                          const response = await fetch(file.url);
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = file.name;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          window.URL.revokeObjectURL(url);
+                        } catch {
+                          toast('Failed to download file.', { type: 'error' });
+                        }
+                      }}
                     >
-                      <td className="py-3 px-3 flex items-center gap-2 md:gap-3">
-                        {/* File type icon and preview, left/right click actions, long-press for mobile */}
-                        <span
-                          className="inline-block bg-[#e0e7ff] rounded p-2 cursor-pointer"
-                          onClick={async () => {
-                            if (file.type === 'image') {
-                              // On mobile, open modal instead of copy
-                              if (window.matchMedia('(pointer: coarse)').matches) {
-                                handleOpenModal(file);
-                                return;
-                              }
-                              try {
-                                const response = await fetch(file.url);
-                                const blob = await response.blob();
-                                if (navigator.clipboard && window.ClipboardItem) {
-                                  await navigator.clipboard.write([
-                                    new window.ClipboardItem({ [blob.type]: blob })
-                                  ]);
-                                  toast('Image copied to clipboard!', { type: 'success' });
-                                } else if (navigator.clipboard) {
-                                  // Fallback: copy image URL
-                                  await navigator.clipboard.writeText(file.url);
-                                  toast('Image URL copied!', { type: 'success' });
-                                } else {
-                                  handleOpenModal(file);
-                                }
-                              } catch {
-                                // Fallback: copy image URL if possible
-                                if (navigator.clipboard) {
-                                  await navigator.clipboard.writeText(file.url);
-                                  toast('Image URL copied!', { type: 'success' });
-                                } else {
-                                  handleOpenModal(file);
-                                }
-                              }
-                            } else {
-                              handleOpenModal(file);
-                            }
-                          }}
-                          onContextMenu={e => handleContextMenu(e, file)}
-                          onTouchStart={e => {
-                            // Long-press to open modal on mobile
-                            if (window.matchMedia('(pointer: coarse)').matches) {
-                              const timer = setTimeout(() => handleOpenModal(file), 500);
-                              const clear = () => clearTimeout(timer);
-                              e.target.addEventListener('touchend', clear, { once: true });
-                              e.target.addEventListener('touchmove', clear, { once: true });
-                            }
-                          }}
-                          title={file.type === 'image' ? 'Tap to copy or hold to open' : 'Right click for options'}
-                        >
-                          {file.type === 'image' ? (
-                            <img src={file.url} alt={file.name} className="w-8 h-8 md:w-10 md:h-10 object-cover rounded" />
-                          ) : file.type === 'file' ? (
-                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg>
-                          ) : file.type === 'folder' ? (
-                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="8" rx="3" fill="#fbbf24"/></svg>
-                          ) : null}
-                        </span>
-                        <span className="font-semibold text-gray-900">{file.name}</span>
-                      </td>
-                      {/* File size from metadata or fallback */}
-                      <td className="py-3 px-3 text-gray-700">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</td>
-                      {/* Uploaded by: actual email if available */}
-                      <td className="py-3 px-3 flex items-center gap-3 align-middle" style={{ verticalAlign: 'middle' }}>
-                        <span className="text-gray-700 font-medium flex items-center justify-center" style={{ height: '40px' }}>{file.uploader_email || '--'}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <button className="text-[#ff4d4f] font-semibold mr-3 hover:underline" onClick={() => handleDeleteFile(file)}>Delete</button>
-                        <button
-                          className="text-[#6c63ff] font-semibold hover:underline ml-2"
-                          onClick={async e => {
-                            e.stopPropagation();
-                            try {
-                              const response = await fetch(file.url);
-                              const blob = await response.blob();
-                              const url = window.URL.createObjectURL(blob);
-                              const link = document.createElement('a');
-                              link.href = url;
-                              link.download = file.name;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                              window.URL.revokeObjectURL(url);
-                            } catch {
-                              toast('Failed to download file.', { type: 'error' });
-                            }
-                          }}
-                        >Download</button>
-                        <button className={`ml-2 px-2 py-1 rounded ${selectedFiles.includes(file.id) ? 'bg-[#6c63ff] text-white' : 'bg-gray-100 text-[#6c63ff]'}`} onClick={() => handleSelectFile(file.id)}>
-                          {selectedFiles.includes(file.id) ? 'Selected' : 'Select'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                      <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round"/></svg>
+                    </button>
+                    <button
+                      className={`p-2 rounded-full ${selectedFiles.includes(file.id) ? 'bg-[#6c63ff] text-white' : 'bg-gray-100 text-[#6c63ff]'}`}
+                      title={selectedFiles.includes(file.id) ? 'Unselect' : 'Select'}
+                      onClick={() => handleSelectFile(file.id)}
+                    >
+                      {selectedFiles.includes(file.id) ? (
+                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#6c63ff"/><path d="M7 13l3 3 7-7" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+                      ) : (
+                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e7ff"/><path d="M7 13l3 3 7-7" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round"/></svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
         {/* Preview modal (responsive layout) */}
@@ -663,20 +653,20 @@ useEffect(() => {
             >
               <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-900 text-xl" onClick={() => setModalFile(null)}>&times;</button>
               <div className="flex-1 flex items-center justify-center mb-8 md:mb-0">
-                {modalFile.type === 'image' ? (
-                  <img src={modalFile.url} alt={modalFile.name} className="max-w-xs max-h-[60vh] rounded mx-auto" />
+                {modalFile?.type === 'image' && modalFile?.url && modalFile?.name ? (
+                  <Image src={modalFile.url} alt={modalFile.name} width={300} height={300} className="max-w-xs max-h-[60vh] rounded mx-auto" />
                 ) : (
-                  <a href={modalFile.url} target="_blank" rel="noopener noreferrer" className="text-[#6c63ff] underline text-lg">Open file</a>
+                  <a href={modalFile?.url || '#'} target="_blank" rel="noopener noreferrer" className="text-[#6c63ff] underline text-lg">Open file</a>
                 )}
               </div>
               <div className="flex-1 flex flex-col justify-center pl-0 md:pl-8">
-                <div className="mb-2 text-base md:text-lg font-bold text-gray-900">{modalFile.name}</div>
-                <div className="mb-2 text-gray-700 text-sm md:text-base">Size: {modalFile.size ? `${(modalFile.size / 1024 / 1024).toFixed(2)} MB` : '--'}</div>
-                <div className="mb-2 text-gray-700 text-sm md:text-base">Uploaded by: {modalFile.uploader_email || '--'}</div>
-                <div className="mb-2 text-gray-700 text-sm md:text-base">Type: {modalFile.type}</div>
-                <div className="mb-2 text-gray-700 text-sm md:text-base">Uploaded at: {modalFile.uploaded_at ? new Date(modalFile.uploaded_at).toLocaleString() : '--'}</div>
-                <button className="mt-4 px-4 py-2 rounded bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition" onClick={() => handleDownloadFile(modalFile)}>Download</button>
-                <button className="mt-2 px-4 py-2 rounded bg-[#ff4d4f] text-white font-semibold shadow hover:bg-[#d43f3a] transition" onClick={() => { handleDeleteFile(modalFile); setModalFile(null); }}>Delete</button>
+                <div className="mb-2 text-base md:text-lg font-bold text-gray-900">{modalFile?.name ?? '--'}</div>
+                <div className="mb-2 text-gray-700 text-sm md:text-base">Size: {typeof modalFile?.size === 'number' ? `${(modalFile.size / 1024 / 1024).toFixed(2)} MB` : '--'}</div>
+                <div className="mb-2 text-gray-700 text-sm md:text-base">Uploaded by: {modalFile?.uploader_email ?? '--'}</div>
+                <div className="mb-2 text-gray-700 text-sm md:text-base">Type: {modalFile?.type ?? '--'}</div>
+                <div className="mb-2 text-gray-700 text-sm md:text-base">Uploaded at: {modalFile?.uploaded_at ? new Date(modalFile.uploaded_at as string).toLocaleString() : '--'}</div>
+                <button className="mt-4 px-4 py-2 rounded bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition" onClick={() => modalFile && handleDownloadFile(modalFile)}>Download</button>
+                <button className="mt-2 px-4 py-2 rounded bg-[#ff4d4f] text-white font-semibold shadow hover:bg-[#d43f3a] transition" onClick={() => { modalFile && handleDeleteFile(modalFile); setModalFile(null); }}>Delete</button>
               </div>
             </div>
           </div>
