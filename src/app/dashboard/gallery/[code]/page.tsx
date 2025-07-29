@@ -19,6 +19,7 @@ type GalleryFile = {
   type: string;
   last_modified?: string | Date;
   uploader_email?: string;
+  uploader_username?: string;
   uploaded_at?: string;
   // add other fields as needed
 };
@@ -130,11 +131,12 @@ export default function GalleryPage() {
   const handleFileUpload = useCallback(async (filesList: File[] | FileList) => {
     if (!gallery) return;
     // Check authentication before uploading
-    const user = await supabase.auth.getUser();
-    if (!user || !user.data?.user) {
+    const userRes = await supabase.auth.getUser();
+    if (!userRes || !userRes.data?.user) {
       toast("You must be logged in to upload files.", { type: "error" });
       return;
     }
+    const username = userRes.data.user.user_metadata?.username || userRes.data.user.email;
     setUploading(true);
     let uploaded = false;
     for (let i = 0; i < filesList.length; i++) {
@@ -163,7 +165,8 @@ export default function GalleryPage() {
         name: file.name,
         type: dbType,
         url: urlData?.publicUrl || null,
-        uploader_email: user.data.user.email,
+        uploader_email: userRes.data.user.email,
+        uploader_username: username,
         uploaded_at: new Date(timestamp).toISOString(),
         size: file.size,
       }).select();
@@ -588,7 +591,50 @@ useEffect(() => {
                     title={file.type === 'image' ? 'Tap to copy or hold to open' : 'Right click for options'}
                   >
                     {file.type === 'image' ? (
-                      <Image src={file.url} alt={file.name} width={160} height={160} className="w-40 h-40 object-cover rounded" />
+                      <div className="relative group w-40 h-40">
+                        <Image src={file.url} alt={file.name} width={160} height={160} className="w-40 h-40 object-cover rounded transition-opacity duration-200 group-hover:opacity-60" />
+                        <button
+                          type="button"
+                          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-transparent"
+                          title="Copy image"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (window.matchMedia('(pointer: coarse)').matches) {
+                              handleOpenModal(file);
+                              return;
+                            }
+                            try {
+                              const response = await fetch(file.url);
+                              const blob = await response.blob();
+                              if (navigator.clipboard && window.ClipboardItem) {
+                                await navigator.clipboard.write([
+                                  new window.ClipboardItem({ [blob.type]: blob })
+                                ]);
+                                toast('Image copied to clipboard!', { type: 'success' });
+                              } else if (navigator.clipboard) {
+                                await navigator.clipboard.writeText(file.url);
+                                toast('Image URL copied!', { type: 'success' });
+                              } else {
+                                handleOpenModal(file);
+                              }
+                            } catch {
+                              if (navigator.clipboard) {
+                                await navigator.clipboard.writeText(file.url);
+                                toast('Image URL copied!', { type: 'success' });
+                              } else {
+                                handleOpenModal(file);
+                              }
+                            }
+                          }}
+                        >
+                          <svg width="48" height="48" fill="none" viewBox="0 0 24 24">
+                            <rect x="6" y="6" width="12" height="12" rx="3" fill="#fff" fillOpacity="0.8" />
+                            <path d="M9 9h6v6H9z" stroke="#6c63ff" strokeWidth="2" fill="none" />
+                            <path d="M12 12v3" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M12 12h3" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                        </button>
+                      </div>
                     ) : file.type === 'file' ? (
                       <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg>
                     ) : file.type === 'folder' ? (
@@ -599,6 +645,7 @@ useEffect(() => {
                     <span className="font-semibold text-gray-900 text-base text-center break-words w-full">{file.name}</span>
                     <span className="text-gray-700 text-sm">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</span>
                     <span className="text-gray-700 text-sm">{file.uploader_email || '--'}</span>
+                  <span className="text-gray-700 text-sm">{file.uploader_username || file.uploader_email || '--'}</span>
                   </div>
                   <div className="flex gap-4 items-center justify-center w-full mt-2">
                     <button className="text-[#ff4d4f] hover:bg-[#ffeaea] p-2 rounded-full" title="Delete" onClick={() => handleDeleteFile(file)}>

@@ -317,7 +317,26 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-2xl sm:text-4xl font-extrabold text-[#6c63ff] mb-2 tracking-tight">Dashboard</h1>
             {user && (
-              <div className="text-gray-700">Signed in as <span className="font-semibold text-[#6c63ff]">{user.email}</span></div>
+              <div>
+                <div className="text-gray-700">Signed in as <span className="font-semibold text-[#6c63ff]">{user.user_metadata?.username || user.email}</span></div>
+                <form
+                  onSubmit={async e => {
+                    e.preventDefault();
+                    const username = e.target.username.value.trim();
+                    if (!username) return;
+                    // Update user_metadata in Supabase
+                    const { error } = await supabase.auth.updateUser({ data: { username } });
+                    if (!error) {
+                      user.user_metadata = { ...user.user_metadata, username };
+                      router.refresh && router.refresh();
+                    }
+                  }}
+                  className="mt-2 flex gap-2 items-center"
+                >
+                  <input name="username" type="text" defaultValue={user.user_metadata?.username || ""} placeholder="Set username" className="border rounded px-2 py-1 text-sm" />
+                  <button type="submit" className="px-3 py-1 rounded bg-[#6c63ff] text-white text-sm font-semibold">Save</button>
+                </form>
+              </div>
             )}
           </div>
           <div className="flex gap-2 sm:gap-4 items-center">
