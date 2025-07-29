@@ -194,13 +194,19 @@ export default function GalleryPage() {
 
   const handleFileUpload = useCallback(async (filesList: File[] | FileList) => {
     if (!gallery) return;
-    // Check authentication before uploading
-    const userRes = await supabase.auth.getUser();
-    if (!userRes || !userRes.data?.user) {
+    // Always fetch latest user data before uploading
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) {
       toast("You must be logged in to upload files.", { type: "error" });
       return;
     }
-    const username = userRes.data.user.user_metadata?.username || userRes.data.user.email;
+    // Fetch latest user metadata from Supabase
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', userData.user.id)
+      .single();
+    const username = profileData?.username || userData.user.user_metadata?.username || userData.user.email;
     setUploading(true);
     let uploaded = false;
     for (let i = 0; i < filesList.length; i++) {
@@ -229,7 +235,7 @@ export default function GalleryPage() {
         name: file.name,
         type: dbType,
         url: urlData?.publicUrl || null,
-        uploader_email: userRes.data.user.email,
+        uploader_email: userData.user.email,
         uploader_username: username,
         uploaded_at: new Date(timestamp).toISOString(),
         size: file.size,
