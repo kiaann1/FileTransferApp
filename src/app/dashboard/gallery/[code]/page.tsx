@@ -36,6 +36,8 @@ export default function GalleryPage() {
   // Router and params
   const router = useRouter();
   const { code } = useParams();
+  // Auth state
+  const [user, setUser] = useState<any>(null);
   // Gallery state
   type Gallery = {
     id: string;
@@ -49,6 +51,19 @@ export default function GalleryPage() {
   const [loading, setLoading] = useState(true);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Check authentication client-side
+  useEffect(() => {
+    async function checkAuth() {
+      const { data } = await supabase.auth.getUser();
+      if (!data?.user) {
+        router.replace("/login");
+      } else {
+        setUser(data.user);
+      }
+    }
+    checkAuth();
+  }, [router]);
   // Drop ref
   const dropRef = useRef<HTMLDivElement>(null);
   // Context menu and modal state
@@ -224,7 +239,7 @@ async function fetchFiles(galleryId: string) {
 
 // Fix infinite loop in gallery and files fetch
 useEffect(() => {
-  if (!code) return;
+  if (!code || !user) return;
   let isMounted = true;
   const fetchGallery = async () => {
     const { data: galleryData, error } = await supabase
@@ -246,7 +261,7 @@ useEffect(() => {
   };
   fetchGallery();
   return () => { isMounted = false; };
-}, [code]);
+}, [code, user]);
 
 useEffect(() => {
   let isMounted = true;
