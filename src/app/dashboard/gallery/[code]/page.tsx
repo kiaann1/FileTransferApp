@@ -627,8 +627,7 @@ useEffect(() => {
                   <div className="w-full flex flex-col items-center justify-center mb-2">
                     <span className="font-semibold text-gray-900 text-base text-center break-words w-full">{file.name}</span>
                     <span className="text-gray-700 text-sm">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</span>
-                    <span className="text-gray-700 text-sm">{file.uploader_email || '--'}</span>
-                  <span className="text-gray-700 text-sm">{file.uploader_username || file.uploader_email || '--'}</span>
+                    <span className="text-gray-700 text-sm">{file.uploader_username || '--'}</span>
                   </div>
                   <div className="flex gap-4 items-center justify-center w-full mt-2">
                     <button className="text-[#ff4d4f] hover:bg-[#ffeaea] p-2 rounded-full" title="Delete" onClick={() => handleDeleteFile(file)}>
@@ -692,7 +691,7 @@ useEffect(() => {
               <div className="flex-1 flex flex-col justify-center pl-0 md:pl-8">
                 <div className="mb-2 text-base md:text-lg font-bold text-gray-900">{modalFile?.name ?? '--'}</div>
                 <div className="mb-2 text-gray-700 text-sm md:text-base">Size: {typeof modalFile?.size === 'number' ? `${(modalFile.size / 1024 / 1024).toFixed(2)} MB` : '--'}</div>
-                <div className="mb-2 text-gray-700 text-sm md:text-base">Uploaded by: {modalFile?.uploader_email ?? '--'}</div>
+                <div className="mb-2 text-gray-700 text-sm md:text-base">Uploaded by: {modalFile?.uploader_username ?? '--'}</div>
                 <div className="mb-2 text-gray-700 text-sm md:text-base">Type: {modalFile?.type ?? '--'}</div>
                 <div className="mb-2 text-gray-700 text-sm md:text-base">Uploaded at: {modalFile?.uploaded_at ? new Date(modalFile.uploaded_at as string).toLocaleString() : '--'}</div>
                 <button className="mt-4 px-4 py-2 rounded bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition" onClick={() => modalFile && handleDownloadFile(modalFile)}>Download</button>
