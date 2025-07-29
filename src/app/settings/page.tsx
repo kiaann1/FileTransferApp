@@ -5,7 +5,12 @@ import React, { useEffect, useState } from "react";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  type SupabaseUser = {
+    id: string;
+    email?: string;
+    user_metadata?: { username?: string };
+  } | null;
+  const [user, setUser] = useState<SupabaseUser>(null);
   useEffect(() => {
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
