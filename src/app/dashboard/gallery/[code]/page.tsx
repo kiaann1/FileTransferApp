@@ -1,13 +1,15 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
+import type { User } from '@supabase/supabase-js';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabaseClient";
 
-  // Mobile menu state must be above return for JSX scope
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+// ...existing code...
+
+// ...existing code...
 type GalleryFile = {
   id: string;
   name: string;
@@ -21,6 +23,8 @@ type GalleryFile = {
 };
 
 export default function GalleryPage() {
+  // Mobile menu state (must be inside component)
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   // Rename gallery state
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -136,7 +140,6 @@ export default function GalleryPage() {
       const file = filesList[i];
       const timestamp = Date.now();
       const filePath = `${gallery.code}/${timestamp}_${file.name}`;
-      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("gallery-files")
         .upload(filePath, file, {
@@ -167,6 +170,7 @@ export default function GalleryPage() {
         toast(`Failed to insert ${file.name} into DB: ${dbError.message}`, { type: "error" });
       } else {
         uploaded = true;
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
         toast(`Uploaded ${file.name}`, { type: "success" });
       }
     }
