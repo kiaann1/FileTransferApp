@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabaseClient";
 
+import type { User } from '@supabase/supabase-js';
+
 type GalleryFile = {
   id: string;
   name: string;
@@ -31,13 +33,12 @@ export default function GalleryPage() {
   // Multi-select state
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   // Password modal state
-  const [passwordInput, setPasswordInput] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  // Removed unused passwordInput and passwordError
   // Router and params
   const router = useRouter();
   const { code } = useParams();
   // Auth state
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   // Gallery state
   type Gallery = {
     id: string;
@@ -69,10 +70,7 @@ export default function GalleryPage() {
   // Context menu and modal state
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; file: GalleryFile | null }>({ visible: false, x: 0, y: 0, file: null });
   const [modalFile, setModalFile] = useState<GalleryFile | null>(null);
-  // New Folder modal state (move to top level, always called)
-  const [showNewFolderModal, setShowNewFolderModal] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
-  const [newFolderError, setNewFolderError] = useState("");
+  // New Folder modal state (removed unused showNewFolderModal, newFolderName, newFolderError)
   // Rename gallery state (already declared above)
 
   // Open modal handler
@@ -83,14 +81,7 @@ export default function GalleryPage() {
   }
 
   // Copy file/image URL to clipboard
-  async function handleCopyUrl(url: string) {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast("Copied to clipboard!", { type: "success" });
-    } catch {
-      toast("Failed to copy.", { type: "error" });
-    }
-  }
+  // Removed unused handleCopyUrl
 
   // Download file
   function handleDownloadFile(file: GalleryFile) {
@@ -274,17 +265,7 @@ useEffect(() => {
   return () => { isMounted = false; };
 }, [gallery?.id, showPasswordModal]);
 
-  async function handlePasswordSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!gallery) return;
-    if (passwordInput === gallery.password) {
-      setShowPasswordModal(false);
-      setPasswordError("");
-      fetchFiles(gallery.id);
-    } else {
-      setPasswordError("Incorrect password. Please try again.");
-    }
-  }
+  // Removed unused handlePasswordSubmit
 
   if (loading) {
     return <div className="p-8 text-center text-gray-400 text-xl">Loading gallery...</div>;
