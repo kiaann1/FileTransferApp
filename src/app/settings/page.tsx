@@ -5,19 +5,12 @@ import React, { useEffect, useState } from "react";
 
 export default function SettingsPage() {
   const router = useRouter();
-  type SupabaseUser = {
-    id: string;
-    email?: string;
-    user_metadata?: { username?: string };
-  } | null;
-  const [user, setUser] = useState<SupabaseUser>(null);
+  // User state is fetched but not used. Remove if not needed, or use in UI below.
   useEffect(() => {
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
       if (!data?.user) {
         router.replace("/login");
-      } else {
-        setUser(data.user);
       }
     };
     fetchUser();
