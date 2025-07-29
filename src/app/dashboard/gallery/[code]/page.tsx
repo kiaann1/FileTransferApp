@@ -8,6 +8,72 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabaseClient";
 import Image from "next/image";
 
+type ImageClickOverlayProps = {
+  file: GalleryFile;
+  handleOpenModal: (file: GalleryFile) => void;
+  toast: any;
+};
+
+function ImageClickOverlay({ file, handleOpenModal, toast }: ImageClickOverlayProps) {
+  const [showOverlay, setShowOverlay] = useState(false);
+  return (
+    <div className="relative w-40 h-40">
+      <Image
+        src={file.url}
+        alt={file.name}
+        width={160}
+        height={160}
+        className={`w-40 h-40 object-cover rounded transition-opacity duration-200 ${showOverlay ? 'opacity-60' : ''}`}
+        onClick={async (e) => {
+          e.stopPropagation();
+          setShowOverlay(true);
+          if (window.matchMedia('(pointer: coarse)').matches) {
+            handleOpenModal(file);
+            return;
+          }
+          try {
+            const response = await fetch(file.url);
+            const blob = await response.blob();
+            if (navigator.clipboard && window.ClipboardItem) {
+              await navigator.clipboard.write([
+                new window.ClipboardItem({ [blob.type]: blob })
+              ]);
+              toast('Image copied to clipboard!', { type: 'success' });
+            } else if (navigator.clipboard) {
+              await navigator.clipboard.writeText(file.url);
+              toast('Image URL copied!', { type: 'success' });
+            } else {
+              handleOpenModal(file);
+            }
+          } catch {
+            if (navigator.clipboard) {
+              await navigator.clipboard.writeText(file.url);
+              toast('Image URL copied!', { type: 'success' });
+            } else {
+              handleOpenModal(file);
+            }
+          }
+          setTimeout(() => setShowOverlay(false), 800);
+        }}
+      />
+      <button
+        type="button"
+        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 bg-transparent ${showOverlay ? 'opacity-100' : 'opacity-0'}`}
+        title="Copy image"
+        tabIndex={-1}
+        style={{ pointerEvents: 'none' }}
+      >
+        <svg width="48" height="48" fill="none" viewBox="0 0 24 24">
+          <rect x="6" y="6" width="12" height="12" rx="3" fill="#fff" fillOpacity="0.8" />
+          <path d="M9 9h6v6H9z" stroke="#6c63ff" strokeWidth="2" fill="none" />
+          <path d="M12 12v3" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round" />
+          <path d="M12 12h3" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 // ...existing code...
 
 // ...existing code...
@@ -544,97 +610,10 @@ useEffect(() => {
                 >
                   <span
                     className="inline-block bg-[#e0e7ff] rounded p-2 cursor-pointer mb-2"
-                    onClick={async () => {
-                      if (file.type === 'image') {
-                        // On mobile, open modal instead of copy
-                        if (window.matchMedia('(pointer: coarse)').matches) {
-                          handleOpenModal(file);
-                          return;
-                        }
-                        try {
-                          const response = await fetch(file.url);
-                          const blob = await response.blob();
-                          if (navigator.clipboard && window.ClipboardItem) {
-                            await navigator.clipboard.write([
-                              new window.ClipboardItem({ [blob.type]: blob })
-                            ]);
-                            toast('Image copied to clipboard!', { type: 'success' });
-                          } else if (navigator.clipboard) {
-                            // Fallback: copy image URL
-                            await navigator.clipboard.writeText(file.url);
-                            toast('Image URL copied!', { type: 'success' });
-                          } else {
-                            handleOpenModal(file);
-                          }
-                        } catch {
-                          // Fallback: copy image URL if possible
-                          if (navigator.clipboard) {
-                            await navigator.clipboard.writeText(file.url);
-                            toast('Image URL copied!', { type: 'success' });
-                          } else {
-                            handleOpenModal(file);
-                          }
-                        }
-                      } else {
-                        handleOpenModal(file);
-                      }
-                    }}
-                    onTouchStart={e => {
-                      // Long-press to open modal on mobile
-                      if (window.matchMedia('(pointer: coarse)').matches) {
-                        const timer = setTimeout(() => handleOpenModal(file), 500);
-                        const clear = () => clearTimeout(timer);
-                        e.target.addEventListener('touchend', clear, { once: true });
-                        e.target.addEventListener('touchmove', clear, { once: true });
-                      }
-                    }}
                     title={file.type === 'image' ? 'Tap to copy or hold to open' : 'Right click for options'}
                   >
                     {file.type === 'image' ? (
-                      <div className="relative group w-40 h-40">
-                        <Image src={file.url} alt={file.name} width={160} height={160} className="w-40 h-40 object-cover rounded transition-opacity duration-200 group-hover:opacity-60" />
-                        <button
-                          type="button"
-                          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-transparent"
-                          title="Copy image"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (window.matchMedia('(pointer: coarse)').matches) {
-                              handleOpenModal(file);
-                              return;
-                            }
-                            try {
-                              const response = await fetch(file.url);
-                              const blob = await response.blob();
-                              if (navigator.clipboard && window.ClipboardItem) {
-                                await navigator.clipboard.write([
-                                  new window.ClipboardItem({ [blob.type]: blob })
-                                ]);
-                                toast('Image copied to clipboard!', { type: 'success' });
-                              } else if (navigator.clipboard) {
-                                await navigator.clipboard.writeText(file.url);
-                                toast('Image URL copied!', { type: 'success' });
-                              } else {
-                                handleOpenModal(file);
-                              }
-                            } catch {
-                              if (navigator.clipboard) {
-                                await navigator.clipboard.writeText(file.url);
-                                toast('Image URL copied!', { type: 'success' });
-                              } else {
-                                handleOpenModal(file);
-                              }
-                            }
-                          }}
-                        >
-                          <svg width="48" height="48" fill="none" viewBox="0 0 24 24">
-                            <rect x="6" y="6" width="12" height="12" rx="3" fill="#fff" fillOpacity="0.8" />
-                            <path d="M9 9h6v6H9z" stroke="#6c63ff" strokeWidth="2" fill="none" />
-                            <path d="M12 12v3" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round" />
-                            <path d="M12 12h3" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round" />
-                          </svg>
-                        </button>
-                      </div>
+                      <ImageClickOverlay file={file} handleOpenModal={handleOpenModal} toast={toast} />
                     ) : file.type === 'file' ? (
                       <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg>
                     ) : file.type === 'folder' ? (
