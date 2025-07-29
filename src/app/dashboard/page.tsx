@@ -311,16 +311,16 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f7f8fa] to-[#e0e7ff]">
-      <div className="max-w-7xl mx-auto py-10 px-4">
+      <div className="max-w-7xl mx-auto py-6 px-2 sm:px-4">
         {/* Modern dashboard header */}
-        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10 border-b pb-6">
+        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 sm:gap-6 mb-8 sm:mb-10 border-b pb-4 sm:pb-6">
           <div>
-            <h1 className="text-4xl font-extrabold text-[#6c63ff] mb-2 tracking-tight">Dashboard</h1>
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-[#6c63ff] mb-2 tracking-tight">Dashboard</h1>
             {user && (
               <div className="text-gray-700">Signed in as <span className="font-semibold text-[#6c63ff]">{user.email}</span></div>
             )}
           </div>
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-2 sm:gap-4 items-center">
             {/* Notification bell for team invites and dropdown */}
             <div className="relative">
               <button
@@ -336,28 +336,29 @@ export default function DashboardPage() {
               </button>
               {showNotifications && (
                 <div
-                  className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-[#e0e7ff] z-50"
-                  tabIndex={-1}
-                  onBlur={() => setShowNotifications(false)}
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 sm:bg-opacity-0"
+                  onClick={() => setShowNotifications(false)}
                 >
-                  <div className="p-4 font-bold text-[#6c63ff] border-b flex justify-between items-center">
-                    <span>Notifications</span>
-                    <button className="text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowNotifications(false)} aria-label="Close">&times;</button>
+                  <div className="bg-white rounded-xl shadow-lg border border-[#e0e7ff] w-full max-w-xs sm:max-w-md mx-auto" onClick={e => e.stopPropagation()}>
+                    <div className="p-4 font-bold text-[#6c63ff] border-b flex justify-between items-center">
+                      <span>Notifications</span>
+                      <button className="text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowNotifications(false)} aria-label="Close">&times;</button>
+                    </div>
+                    <ul className="max-h-64 overflow-y-auto">
+                      {notifications.length > 0 && (
+                        <li className="px-4 py-2 border-b font-semibold text-red-700">System Notifications</li>
+                      )}
+                      {notifications.map(n => (
+                        <li key={n.id} className="flex items-center justify-between px-4 py-3 border-b last:border-b-0">
+                          <span className="text-gray-700">{n.message}</span>
+                          <button className="ml-2 text-gray-400 hover:text-red-600 text-lg font-bold" onClick={() => handleClearNotification(n.id)} aria-label="Clear notification">×</button>
+                        </li>
+                      ))}
+                      {notifications.length === 0 && (
+                        <li className="px-4 py-8 text-center text-gray-400">No notifications</li>
+                      )}
+                    </ul>
                   </div>
-                  <ul className="max-h-64 overflow-y-auto">
-                    {notifications.length > 0 && (
-                      <li className="px-4 py-2 border-b font-semibold text-red-700">System Notifications</li>
-                    )}
-                    {notifications.map(n => (
-                      <li key={n.id} className="flex items-center justify-between px-4 py-3 border-b last:border-b-0">
-                        <span className="text-gray-700">{n.message}</span>
-                        <button className="ml-2 text-gray-400 hover:text-red-600 text-lg font-bold" onClick={() => handleClearNotification(n.id)} aria-label="Clear notification">×</button>
-                      </li>
-                    ))}
-                    {notifications.length === 0 && (
-                      <li className="px-4 py-8 text-center text-gray-400">No notifications</li>
-                    )}
-                  </ul>
                 </div>
               )}
             </div>
@@ -371,7 +372,7 @@ export default function DashboardPage() {
         </header>
         {/* Dashboard summary bar */}
         <section className="mb-10">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center border border-[#e0e7ff]">
               <span className="text-3xl font-bold text-[#6c63ff]">{galleries.length}</span>
               <span className="text-gray-500 mt-2">Total Galleries</span>
@@ -385,9 +386,9 @@ export default function DashboardPage() {
               <span className="text-gray-500 mt-2">Recent Activity</span>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h2 className="text-2xl font-bold text-[#6c63ff]">Your Galleries</h2>
-            <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#6c63ff]">Your Galleries</h2>
+            <div className="flex gap-2 flex-wrap w-full sm:w-auto">
               <button
                 className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition"
                 onClick={() => setShowModal(true)}
@@ -511,7 +512,7 @@ export default function DashboardPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
               {/* Sort galleries: starred first */}
               {[...galleries].map(gallery => (
                 <div className="relative group" key={gallery.id}>

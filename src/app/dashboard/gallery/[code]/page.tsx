@@ -315,15 +315,15 @@ useEffect(() => {
 
   // Topbar with rename
   return (
-    <div className="min-h-screen bg-[#f7f8fa] flex">
+    <div className="min-h-screen bg-[#f7f8fa] flex flex-col md:flex-row">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-[#e0e7ff] flex flex-col py-10 px-6 min-h-screen">
+      <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-[#e0e7ff] flex flex-row md:flex-col py-4 md:py-10 px-2 md:px-6 min-h-[60px] md:min-h-screen items-center md:items-start justify-between md:justify-start">
         {/* Logo at top */}
-        <div className="mb-10 flex items-center justify-center">
-          <img src="/file.svg" alt="Logo" className="h-12 w-auto" />
+        <div className="mb-0 md:mb-10 flex items-center justify-center w-full">
+          <img src="/file.svg" alt="Logo" className="h-10 md:h-12 w-auto" />
         </div>
-        <nav className="flex flex-col gap-6">
+        <nav className="flex flex-row md:flex-col gap-2 md:gap-6 w-full justify-center md:justify-start">
           {sidebarNav.map(item => (
             <a
               key={item.name}
@@ -336,9 +336,9 @@ useEffect(() => {
           ))}
         </nav>
       </aside>
-      <main className="flex-1 px-12 py-10">
+      <main className="flex-1 px-2 md:px-12 py-4 md:py-10">
         {/* Topbar */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-6 md:mb-8">
           <div>
             <div className="flex items-center gap-2 mb-1">
               {!renaming ? (
@@ -446,7 +446,7 @@ useEffect(() => {
             {renameError && <div className="text-red-600 text-sm mb-1">{renameError}</div>}
             <div className="text-gray-400 font-medium">All your uploaded files, assets, and documents in one place.</div>
           </div>
-          <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mt-2 sm:mt-0">
             <span className="font-mono text-lg bg-[#f3f4fe] px-4 py-2 rounded-lg border border-[#b3b3ff] text-black">{gallery?.code || "-"}</span>
             <button
               className="px-4 py-2 rounded-lg bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition text-base"
@@ -460,8 +460,8 @@ useEffect(() => {
           </div>
         </div>
         {/* Upload box */}
-        <div className="mb-10">
-          <div ref={dropRef} className="rounded-2xl border-2 border-[#b3b3ff] bg-white p-10 flex flex-col items-center justify-center text-center shadow-sm" style={{ minHeight: 180 }}>
+        <div className="mb-6 md:mb-10">
+          <div ref={dropRef} className="rounded-2xl border-2 border-[#b3b3ff] bg-white p-6 md:p-10 flex flex-col items-center justify-center text-center shadow-sm" style={{ minHeight: 120 }}>
             <label htmlFor="file-upload-input" className="cursor-pointer flex flex-col items-center w-full">
               <div className="flex items-center gap-6 mb-3">
                 <span className="inline-block bg-[#f3f4fe] rounded-full p-4">
@@ -483,15 +483,15 @@ useEffect(() => {
         {/* Debug output: show raw files, sortedFiles, and gallery object */}
         {/* ...existing code... */}
         {/* File table */}
-        <div className="bg-white rounded-2xl shadow p-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-2xl shadow p-4 md:p-8 overflow-x-auto">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 md:mb-6">
             <div className="text-xl font-bold text-gray-900">Attached Files <span className="text-xs text-[#6c63ff] font-semibold ml-2">{files.length} Total</span></div>
             <div className="flex gap-3 items-center">
               {/* Search and collaborator UI temporarily hidden for debugging */}
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-base">
+            <table className="min-w-full text-left text-sm md:text-base">
               <thead>
                 <tr className="border-b">
                   <th className="py-3 px-3 font-semibold text-gray-600">File Name</th>
@@ -510,31 +510,59 @@ useEffect(() => {
                       className={`hover:bg-[#f3f4fe] ${selectedFiles.includes(file.id) ? 'border-4 border-[#6c63ff] bg-[#f3f4fe]' : 'border-b'}`}
                       style={selectedFiles.includes(file.id) ? { borderColor: '#6c63ff' } : {}}
                     >
-                      <td className="py-3 px-3 flex items-center gap-3">
-                        {/* File type icon and preview, left/right click actions */}
+                      <td className="py-3 px-3 flex items-center gap-2 md:gap-3">
+                        {/* File type icon and preview, left/right click actions, long-press for mobile */}
                         <span
                           className="inline-block bg-[#e0e7ff] rounded p-2 cursor-pointer"
                           onClick={async () => {
                             if (file.type === 'image') {
+                              // On mobile, open modal instead of copy
+                              if (window.matchMedia('(pointer: coarse)').matches) {
+                                handleOpenModal(file);
+                                return;
+                              }
                               try {
                                 const response = await fetch(file.url);
                                 const blob = await response.blob();
-                                await navigator.clipboard.write([
-                                  new window.ClipboardItem({ [blob.type]: blob })
-                                ]);
-                                toast('Image copied to clipboard!', { type: 'success' });
+                                if (navigator.clipboard && window.ClipboardItem) {
+                                  await navigator.clipboard.write([
+                                    new window.ClipboardItem({ [blob.type]: blob })
+                                  ]);
+                                  toast('Image copied to clipboard!', { type: 'success' });
+                                } else if (navigator.clipboard) {
+                                  // Fallback: copy image URL
+                                  await navigator.clipboard.writeText(file.url);
+                                  toast('Image URL copied!', { type: 'success' });
+                                } else {
+                                  handleOpenModal(file);
+                                }
                               } catch {
-                                toast('Failed to copy image.', { type: 'error' });
+                                // Fallback: copy image URL if possible
+                                if (navigator.clipboard) {
+                                  await navigator.clipboard.writeText(file.url);
+                                  toast('Image URL copied!', { type: 'success' });
+                                } else {
+                                  handleOpenModal(file);
+                                }
                               }
                             } else {
                               handleOpenModal(file);
                             }
                           }}
                           onContextMenu={e => handleContextMenu(e, file)}
-                          title={file.type === 'image' ? 'Click to copy image' : 'Right click for options'}
+                          onTouchStart={e => {
+                            // Long-press to open modal on mobile
+                            if (window.matchMedia('(pointer: coarse)').matches) {
+                              let timer = setTimeout(() => handleOpenModal(file), 500);
+                              const clear = () => clearTimeout(timer);
+                              e.target.addEventListener('touchend', clear, { once: true });
+                              e.target.addEventListener('touchmove', clear, { once: true });
+                            }
+                          }}
+                          title={file.type === 'image' ? 'Tap to copy or hold to open' : 'Right click for options'}
                         >
                           {file.type === 'image' ? (
-                            <img src={file.url} alt={file.name} className="w-10 h-10 object-cover rounded" />
+                            <img src={file.url} alt={file.name} className="w-8 h-8 md:w-10 md:h-10 object-cover rounded" />
                           ) : file.type === 'file' ? (
                             <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg>
                           ) : file.type === 'folder' ? (
@@ -595,11 +623,11 @@ useEffect(() => {
                 )}
               </div>
               <div className="flex-1 flex flex-col justify-center pl-8">
-                <div className="mb-2 text-lg font-bold text-gray-900">{modalFile.name}</div>
-                <div className="mb-2 text-gray-700">Size: {modalFile.size ? `${(modalFile.size / 1024 / 1024).toFixed(2)} MB` : '--'}</div>
-                <div className="mb-2 text-gray-700">Uploaded by: {modalFile.uploader_email || '--'}</div>
-                <div className="mb-2 text-gray-700">Type: {modalFile.type}</div>
-                <div className="mb-2 text-gray-700">Uploaded at: {modalFile.uploaded_at ? new Date(modalFile.uploaded_at).toLocaleString() : '--'}</div>
+                <div className="mb-2 text-base md:text-lg font-bold text-gray-900">{modalFile.name}</div>
+                <div className="mb-2 text-gray-700 text-sm md:text-base">Size: {modalFile.size ? `${(modalFile.size / 1024 / 1024).toFixed(2)} MB` : '--'}</div>
+                <div className="mb-2 text-gray-700 text-sm md:text-base">Uploaded by: {modalFile.uploader_email || '--'}</div>
+                <div className="mb-2 text-gray-700 text-sm md:text-base">Type: {modalFile.type}</div>
+                <div className="mb-2 text-gray-700 text-sm md:text-base">Uploaded at: {modalFile.uploaded_at ? new Date(modalFile.uploaded_at).toLocaleString() : '--'}</div>
                 <button className="mt-4 px-4 py-2 rounded bg-[#6c63ff] text-white font-semibold shadow hover:bg-[#5548c8] transition" onClick={() => handleDownloadFile(modalFile)}>Download</button>
                 <button className="mt-2 px-4 py-2 rounded bg-[#ff4d4f] text-white font-semibold shadow hover:bg-[#d43f3a] transition" onClick={() => { handleDeleteFile(modalFile); setModalFile(null); }}>Delete</button>
               </div>
