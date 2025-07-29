@@ -1,18 +1,13 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { User } from '@supabase/supabase-js';
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer, toast, ToastContent } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabaseClient";
 import Image from "next/image";
 
-type ImageClickOverlayProps = {
-  file: GalleryFile;
-  handleOpenModal: (file: GalleryFile) => void;
-  toast: any;
-};
 
 function ImageClickOverlay({ file, handleOpenModal, toast }: ImageClickOverlayProps) {
   const [showOverlay, setShowOverlay] = useState(false);
@@ -74,9 +69,6 @@ function ImageClickOverlay({ file, handleOpenModal, toast }: ImageClickOverlayPr
   );
 }
 
-// ...existing code...
-
-// ...existing code...
 type GalleryFile = {
   id: string;
   name: string;
@@ -88,6 +80,12 @@ type GalleryFile = {
   uploader_username?: string;
   uploaded_at?: string;
   // add other fields as needed
+};
+
+type ImageClickOverlayProps = {
+  file: GalleryFile;
+  handleOpenModal: (file: GalleryFile) => void;
+  toast: (content: import("react-toastify").ToastContent, options?: object) => void;
 };
 
 export default function GalleryPage() {
