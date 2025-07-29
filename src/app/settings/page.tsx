@@ -1,7 +1,7 @@
 "use client";
 import { supabase } from "../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 
 export default function SettingsPage() {
   const router = useRouter();

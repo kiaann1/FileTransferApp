@@ -8,19 +8,20 @@ export function UserContextProvider({ children }: { children: React.ReactNode })
   const [currentUser, setCurrentUser] = React.useState<User>(null);
   React.useEffect(() => {
     let isMounted = true;
-    let subscription: any;
-    let supabaseInstance: any;
+    let subscription: { unsubscribe: () => void } | null = null;
+    let supabaseInstance: typeof import("../../lib/supabaseClient").supabase;
     const setup = async () => {
       supabaseInstance = (await import("../../lib/supabaseClient")).supabase;
       try {
-        const { data, error } = await supabaseInstance.auth.getUser();
+        const { data } = await supabaseInstance.auth.getUser();
         if (isMounted) setCurrentUser(data?.user ?? null);
-      } catch (err) {
+      } catch {
         if (isMounted) setCurrentUser(null);
       }
-      subscription = supabaseInstance.auth.onAuthStateChange((_event: any, session: any) => {
+      const { data: { subscription: sub } } = supabaseInstance.auth.onAuthStateChange((_event, session) => {
         setCurrentUser(session?.user ?? null);
       });
+      subscription = sub;
     };
     setup();
     return () => {

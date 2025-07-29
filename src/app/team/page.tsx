@@ -5,14 +5,12 @@ import React, { useEffect, useState } from "react";
 
 export default function TeamPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  // User state is fetched but not used. Remove if not needed, or use in UI below.
   useEffect(() => {
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
       if (!data?.user) {
         router.replace("/login");
-      } else {
-        setUser(data.user);
       }
     };
     fetchUser();
