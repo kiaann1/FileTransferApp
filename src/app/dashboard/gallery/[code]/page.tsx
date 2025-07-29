@@ -553,7 +553,7 @@ useEffect(() => {
                           onTouchStart={e => {
                             // Long-press to open modal on mobile
                             if (window.matchMedia('(pointer: coarse)').matches) {
-                              let timer = setTimeout(() => handleOpenModal(file), 500);
+                              const timer = setTimeout(() => handleOpenModal(file), 500);
                               const clear = () => clearTimeout(timer);
                               e.target.addEventListener('touchend', clear, { once: true });
                               e.target.addEventListener('touchmove', clear, { once: true });
