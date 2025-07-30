@@ -161,6 +161,7 @@ export default function GalleryPage() {
     const { error } = await supabase.from('gallery_files').update({ deleted: true }).eq('id', file.id);
     if (error) {
       toast('Failed to move file to Trash.', { type: 'error' });
+      console.error('Supabase update error:', error);
     } else {
       toast('File moved to Trash.', { type: 'success' });
       if (gallery) {
@@ -269,9 +270,17 @@ async function fetchFiles(galleryId: string) {
     .select("*")
     .eq("gallery_id", galleryId);
   if (error) {
+    toast('Error fetching files.', { type: 'error' });
     console.error('Error fetching files:', error);
-  } 
-  setFiles(filesData || []);
+    setFiles([]);
+    return;
+  }
+  if (!Array.isArray(filesData)) {
+    toast('No files returned from DB.', { type: 'error' });
+    setFiles([]);
+    return;
+  }
+  setFiles(filesData);
 }
 
 useEffect(() => {
