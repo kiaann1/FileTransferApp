@@ -75,6 +75,7 @@ type GalleryFile = {
   url: string;
   size?: number;
   type: string;
+  parent_id?: string | null;
   last_modified?: string | Date;
   uploader_email?: string;
   uploader_username?: string;
@@ -89,6 +90,37 @@ type ImageClickOverlayProps = {
 };
 
 export default function GalleryPage() {
+  // Folder creation modal state
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [folderLoading, setFolderLoading] = useState(false);
+  const [folderError, setFolderError] = useState("");
+
+  async function handleCreateFolder() {
+    if (!gallery || !newFolderName.trim()) {
+      setFolderError("Folder name required.");
+      return;
+    }
+    setFolderLoading(true);
+    setFolderError("");
+    const { error } = await supabase.from("gallery_files").insert({
+      gallery_id: gallery.id,
+      name: newFolderName.trim(),
+      type: "folder",
+      parent_id: null,
+      uploaded_at: new Date().toISOString(),
+    });
+    setFolderLoading(false);
+    if (error) {
+      setFolderError("Failed to create folder.");
+      toast("Failed to create folder.", { type: "error" });
+    } else {
+      setShowFolderModal(false);
+      setNewFolderName("");
+      toast("Folder created!", { type: "success" });
+      if (gallery) await fetchFiles(gallery.id);
+    }
+  }
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -339,15 +371,24 @@ useEffect(() => {
     { name: "Settings", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e7ff"/><rect x="10" y="6" width="4" height="12" rx="2" fill="#6c63ff"/></svg>, href: "/dashboard/settings" },
   ];
 
-  const sortedFiles = [...files].sort((a, b) => {
-    if (a.uploaded_at && b.uploaded_at) {
-      return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
-    }
-    return 0;
-  }).filter(f => !f.deleted);
+  // Folder navigation state
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+
+  // Filter files for current folder
+  const folders = files
+    .filter(f => f.type === 'folder' && !f.deleted && f.parent_id === currentFolderId)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const regularFiles = files
+    .filter(f => f.type !== 'folder' && !f.deleted && f.parent_id === currentFolderId)
+    .sort((a, b) => {
+      if (a.uploaded_at && b.uploaded_at) {
+        return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
+      }
+      return 0;
+    });
 
   // Trash files
-  const trashFiles = [...files].filter(f => f.deleted).sort((a, b) => {
+  const trashFiles = files.filter(f => f.deleted).sort((a, b) => {
     if (a.uploaded_at && b.uploaded_at) {
       return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
     }
@@ -582,83 +623,92 @@ useEffect(() => {
         </div>
         {/* Debug output: show raw files, sortedFiles, and gallery object */}
         {/* ...existing code... */}
-        {/* File table */}
-        <div className="bg-white rounded-2xl shadow p-4 md:p-8 overflow-x-auto mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 md:mb-6">
-            <div className="text-xl font-bold text-gray-900">Attached Files <span className="text-xs text-[#6c63ff] font-semibold ml-2">{sortedFiles.length} Total</span></div>
-            <div className="flex gap-3 items-center">
-              {/* Search and collaborator UI temporarily hidden for debugging */}
+        {/* New Folder Button and Modal */}
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            className="px-4 py-2 rounded-lg bg-[#fbbf24] text-white font-semibold shadow hover:bg-[#e0b024] transition text-base"
+            onClick={() => setShowFolderModal(true)}
+          >
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" className="inline-block mr-2 align-middle"><rect x="4" y="10" width="16" height="8" rx="3" fill="#fff"/><path d="M12 14v-4M10 12h4" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round"/></svg>
+            New Folder
+          </button>
+        </div>
+        {showFolderModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(247, 248, 250, 0.85)' }} onClick={() => setShowFolderModal(false)}>
+            <div className="bg-white rounded-2xl p-8 shadow-lg relative w-full max-w-md flex flex-col" onClick={e => e.stopPropagation()}>
+              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowFolderModal(false)} aria-label="Close">&times;</button>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Folder</h2>
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={e => setNewFolderName(e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#fbbf24] text-black mb-4"
+                placeholder="Folder name"
+                disabled={folderLoading}
+                autoFocus
+              />
+              {folderError && <div className="text-red-600 text-sm mb-2">{folderError}</div>}
+              <button
+                className="px-6 py-3 rounded-xl bg-[#fbbf24] text-white text-lg font-semibold shadow hover:bg-[#e0b024] transition"
+                onClick={handleCreateFolder}
+                disabled={folderLoading}
+              >{folderLoading ? "Creating..." : "Create Folder"}</button>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {sortedFiles.length === 0 ? (
-              <div className="col-span-4 text-gray-400 text-center py-12 text-lg">No files uploaded yet.</div>
-            ) : (
-              sortedFiles.map(file => (
-                <div
-                  key={file.id}
-                  className={`bg-[#f3f4fe] rounded-2xl shadow p-4 flex flex-col items-center justify-start relative border transition-all ${selectedFiles.includes(file.id) ? 'border-4 border-[#6c63ff]' : 'border border-[#e0e7ff]'}`}
-                  style={selectedFiles.includes(file.id) ? { borderColor: '#6c63ff' } : {}}
-                  onContextMenu={e => handleContextMenu(e, file)}
-                >
-                  <span
-                    className="inline-block bg-[#e0e7ff] rounded p-2 cursor-pointer mb-2"
-                    title={file.type === 'image' ? 'Tap to copy or hold to open' : 'Right click for options'}
-                  >
-                    {file.type === 'image' ? (
-                      <ImageClickOverlay file={file} handleOpenModal={handleOpenModal} toast={toast} />
-                    ) : file.type === 'file' ? (
-                      <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#6c63ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#b3b3ff"/></svg>
-                    ) : file.type === 'folder' ? (
-                      <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="8" rx="3" fill="#fbbf24"/></svg>
-                    ) : null}
-                  </span>
-                  <div className="w-full flex flex-col items-center justify-center mb-2">
-                    <span className="font-semibold text-gray-900 text-base text-center break-words w-full">{file.name}</span>
-                    <span className="text-gray-700 text-sm">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</span>
-                    <span className="text-gray-700 text-sm">{file.uploader_username || '--'}</span>
-                  </div>
-                  <div className="flex gap-4 items-center justify-center w-full mt-2">
-                    <button className="text-[#ff4d4f] hover:bg-[#ffeaea] p-2 rounded-full" title="Delete" onClick={() => handleDeleteFile(file)}>
-                      <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6" stroke="#ff4d4f" strokeWidth="2" strokeLinecap="round"/></svg>
-                    </button>
-                    <button
-                      className="text-[#6c63ff] hover:bg-[#e0e7ff] p-2 rounded-full"
-                      title="Download"
-                      onClick={async e => {
-                        e.stopPropagation();
-                        try {
-                          const response = await fetch(file.url);
-                          const blob = await response.blob();
-                          const url = window.URL.createObjectURL(blob);
-                          const link = document.createElement('a');
-                          link.href = url;
-                          link.download = file.name;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                          window.URL.revokeObjectURL(url);
-                        } catch {
-                          toast('Failed to download file.', { type: 'error' });
-                        }
-                      }}
-                    >
-                      <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round"/></svg>
-                    </button>
-                    <button
-                      className={`p-2 rounded-full ${selectedFiles.includes(file.id) ? 'bg-[#6c63ff] text-white' : 'bg-gray-100 text-[#6c63ff]'}`}
-                      title={selectedFiles.includes(file.id) ? 'Unselect' : 'Select'}
-                      onClick={() => handleSelectFile(file.id)}
-                    >
-                      {selectedFiles.includes(file.id) ? (
-                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#6c63ff"/><path d="M7 13l3 3 7-7" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
-                      ) : (
-                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e7ff"/><path d="M7 13l3 3 7-7" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round"/></svg>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              ))
+        )}
+        {/* File & Folder grid */}
+        <div className="bg-white rounded-2xl shadow p-4 md:p-8 overflow-x-auto mb-8">
+          {/* Folder navigation bar */}
+          {currentFolderId && (
+            <div className="mb-4 flex items-center gap-2">
+              <button
+                className="px-3 py-1 rounded bg-[#f3f4fe] text-[#6c63ff] font-semibold hover:bg-[#e0e7ff]"
+                onClick={() => setCurrentFolderId(null)}
+              >
+                ← Back
+              </button>
+              <span className="text-gray-500">Viewing folder</span>
+            </div>
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {/* Folders first */}
+            {folders.map(folder => (
+              <div
+                key={folder.id}
+                className="flex flex-col items-center justify-center p-4 rounded-lg bg-[#fffbe6] border border-[#fbbf24] shadow cursor-pointer hover:bg-[#fff3c4] transition"
+                onClick={() => setCurrentFolderId(folder.id)}
+                title={folder.name}
+              >
+                <svg width="40" height="40" fill="none" viewBox="0 0 24 24" className="mb-2">
+                  <rect x="3" y="7" width="18" height="10" rx="3" fill="#fbbf24"/>
+                  <rect x="3" y="7" width="18" height="4" rx="2" fill="#ffe066"/>
+                </svg>
+                <span className="font-semibold text-[#b38600] text-base truncate w-full text-center">{folder.name}</span>
+              </div>
+            ))}
+            {/* Files */}
+            {regularFiles.map(file => (
+              <div
+                key={file.id}
+                className="flex flex-col items-center justify-center p-4 rounded-lg bg-white border border-[#e0e7ff] shadow cursor-pointer hover:bg-[#f3f4fe] transition"
+                onClick={() => handleOpenModal(file)}
+                onContextMenu={e => handleContextMenu(e, file)}
+                title={file.name}
+              >
+                {file.type === 'image' && file.url ? (
+                  <Image src={file.url} alt={file.name} width={80} height={80} className="rounded mb-2 object-cover" />
+                ) : (
+                  <svg width="40" height="40" fill="none" viewBox="0 0 24 24" className="mb-2">
+                    <rect x="4" y="6" width="16" height="12" rx="3" fill="#b3b3ff"/>
+                    <rect x="9" y="15" width="6" height="2" rx="1" fill="#6c63ff"/>
+                  </svg>
+                )}
+                <span className="font-medium text-gray-900 text-base truncate w-full text-center">{file.name}</span>
+              </div>
+            ))}
+            {/* If no files/folders */}
+            {folders.length === 0 && regularFiles.length === 0 && (
+              <div className="col-span-full text-gray-400 text-center py-8">No files or folders found.</div>
             )}
           </div>
         </div>
