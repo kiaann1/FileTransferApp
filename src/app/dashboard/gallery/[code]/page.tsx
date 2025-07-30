@@ -382,11 +382,12 @@ const [folderError, setFolderError] = useState("");
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
 
   // Filter files for current folder
+  // Only show files/folders in the current folder
   const folders = files
-    .filter(f => f.type === 'folder' && !f.deleted && f.parent_id === currentFolderId)
+    .filter(f => f.type === 'folder' && !f.deleted && (f.parent_id === currentFolderId || (!f.parent_id && !currentFolderId)))
     .sort((a, b) => a.name.localeCompare(b.name));
   const regularFiles = files
-    .filter(f => f.type !== 'folder' && !f.deleted && f.parent_id === currentFolderId)
+    .filter(f => f.type !== 'folder' && !f.deleted && (f.parent_id === currentFolderId || (!f.parent_id && !currentFolderId)))
     .sort((a, b) => {
       if (a.uploaded_at && b.uploaded_at) {
         return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
