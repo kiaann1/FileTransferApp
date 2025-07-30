@@ -407,10 +407,14 @@ const [folderError, setFolderError] = useState("");
   // MoveFileToFolder must be after gallery and fetchFiles
   async function moveFileToFolder(fileId: string, folderId: string) {
     console.log('moveFileToFolder called:', { fileId, folderId });
-    const { error } = await supabase
+    // Ensure folderId is a string
+    const parentIdToSet = folderId ? String(folderId) : null;
+    const { data, error } = await supabase
       .from("gallery_files")
-      .update({ parent_id: folderId })
-      .eq("id", fileId);
+      .update({ parent_id: parentIdToSet })
+      .eq("id", fileId)
+      .select();
+    console.log('Supabase update result:', { data, error });
     if (error) {
       toast("Failed to move file.", { type: "error" });
       console.error('Supabase error moving file:', error);
