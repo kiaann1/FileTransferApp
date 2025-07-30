@@ -688,6 +688,14 @@ const [folderError, setFolderError] = useState("");
           </div>
         )}
         {/* File & Folder grid */}
+        {/* Debug output: show raw files and currentFolderId */}
+        <div className="mb-4 p-2 bg-[#f3f4fe] rounded text-xs text-gray-700">
+          <strong>Debug:</strong> currentFolderId: {String(currentFolderId)}<br />
+          Files:
+          <pre style={{ maxHeight: 200, overflow: 'auto', background: '#fff', border: '1px solid #e0e7ff', padding: 8 }}>
+            {JSON.stringify(files, null, 2)}
+          </pre>
+        </div>
         <div className="bg-white rounded-2xl shadow p-4 md:p-8 overflow-x-auto mb-8">
           {/* Folder navigation bar */}
           {currentFolderId && (
