@@ -412,9 +412,9 @@ const [folderError, setFolderError] = useState("");
       toast("Failed to move file.", { type: "error" });
     } else {
       toast("File moved!", { type: "success" });
+      setDraggedFileId(null); // Reset drag state so UI updates
       // Refetch files to update UI
       if (gallery) await fetchFiles(gallery.id);
-      setDraggedFileId(null); // Reset drag state so UI updates
     }
   }
 
@@ -703,7 +703,11 @@ const [folderError, setFolderError] = useState("");
               <div
                 key={folder.id}
                 className={`flex flex-col items-center justify-center p-4 rounded-lg border shadow cursor-pointer transition ${dragOverFolderId === folder.id ? 'bg-[#ffe066] border-[#e0b024]' : 'bg-[#fffbe6] border-[#fbbf24] hover:bg-[#fff3c4]'}`}
-                onClick={() => setCurrentFolderId(folder.id)}
+                onClick={() => {
+                  setCurrentFolderId(folder.id);
+                  // Optionally refetch files for UI update
+                  if (gallery) fetchFiles(gallery.id);
+                }}
                 title={folder.name}
                 onDragOver={e => {
                   e.preventDefault();
