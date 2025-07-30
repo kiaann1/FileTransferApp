@@ -414,6 +414,7 @@ const [folderError, setFolderError] = useState("");
       toast("File moved!", { type: "success" });
       // Refetch files to update UI
       if (gallery) await fetchFiles(gallery.id);
+      setDraggedFileId(null); // Reset drag state so UI updates
     }
   }
 
