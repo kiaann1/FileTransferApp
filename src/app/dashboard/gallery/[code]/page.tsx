@@ -300,6 +300,8 @@ export default function GalleryPage() {
     };
   }, [handleFileUpload]);
 
+
+  // Move all hooks above conditional returns
   useEffect(() => {
     function handleClick() {
       if (contextMenu.visible) setContextMenu({ ...contextMenu, visible: false });
@@ -308,60 +310,56 @@ export default function GalleryPage() {
     return () => window.removeEventListener('click', handleClick);
   }, [contextMenu]);
 
-async function fetchFiles(galleryId: string) {
-  const { data: filesData, error } = await supabase
-    .from("gallery_files")
-    .select("*")
-    .eq("gallery_id", galleryId);
-  if (error) {
-    toast('Error fetching files.', { type: 'error' });
-    console.error('Error fetching files:', error);
-    setFiles([]);
-    return;
-  }
-  if (!Array.isArray(filesData)) {
-    toast('No files returned from DB.', { type: 'error' });
-    setFiles([]);
-    return;
-  }
-  setFiles(filesData);
-  console.log('Fetched files:', filesData);
-}
-
-useEffect(() => {
-  const fetchGallery = async () => {
-    const { data: galleryData, error } = await supabase
-      .from("galleries")
-      .select("id, name, code, password")
-      .eq("code", code)
-      .single();
-    if (error || !galleryData) {
-      router.replace("/dashboard");
+  async function fetchFiles(galleryId: string) {
+    const { data: filesData, error } = await supabase
+      .from("gallery_files")
+      .select("*")
+      .eq("gallery_id", galleryId);
+    if (error) {
+      toast('Error fetching files.', { type: 'error' });
+      console.error('Error fetching files:', error);
+      setFiles([]);
       return;
     }
-    setGallery(galleryData);
-    if (galleryData.password) {
-      setShowPasswordModal(true);
+    if (!Array.isArray(filesData)) {
+      toast('No files returned from DB.', { type: 'error' });
+      setFiles([]);
+      return;
     }
-    setLoading(false);
-  };
-  if (code && user && router) {
-    fetchGallery();
+    setFiles(filesData);
+    console.log('Fetched files:', filesData);
   }
-}, [code, user, router]);
 
-useEffect(() => {
-  async function fetchIfNeeded() {
-    if (gallery && (!gallery.password || !showPasswordModal)) {
-      await fetchFiles(gallery.id);
+  useEffect(() => {
+    const fetchGallery = async () => {
+      const { data: galleryData, error } = await supabase
+        .from("galleries")
+        .select("id, name, code, password")
+        .eq("code", code)
+        .single();
+      if (error || !galleryData) {
+        router.replace("/dashboard");
+        return;
+      }
+      setGallery(galleryData);
+      if (galleryData.password) {
+        setShowPasswordModal(true);
+      }
+      setLoading(false);
+    };
+    if (code && user && router) {
+      fetchGallery();
     }
-  }
-  fetchIfNeeded();
-}, [gallery, showPasswordModal]);
+  }, [code, user, router]);
 
-  if (loading) {
-    return <div className="p-8 text-center text-gray-400 text-xl">Loading gallery...</div>;
-  }
+  useEffect(() => {
+    async function fetchIfNeeded() {
+      if (gallery && (!gallery.password || !showPasswordModal)) {
+        await fetchFiles(gallery.id);
+      }
+    }
+    fetchIfNeeded();
+  }, [gallery, showPasswordModal]);
 
   const sidebarNav = [
     { name: "Dashboard", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="#6c63ff"/></svg>, href: "/dashboard" },
@@ -394,6 +392,10 @@ useEffect(() => {
     }
     return 0;
   });
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-400 text-xl">Loading gallery...</div>;
+  }
 
 
   async function handleRenameSubmit() {
