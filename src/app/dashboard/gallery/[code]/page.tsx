@@ -79,7 +79,7 @@ type GalleryFile = {
   uploader_email?: string;
   uploader_username?: string;
   uploaded_at?: string;
-  // add other fields as needed
+  deleted?: boolean;
 };
 
 type ImageClickOverlayProps = {
@@ -89,33 +89,23 @@ type ImageClickOverlayProps = {
 };
 
 export default function GalleryPage() {
-  // Mobile menu state (must be inside component)
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  // Rename gallery state
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [renameLoading, setRenameLoading] = useState(false);
   const [renameError, setRenameError] = useState("");
-  // Settings modal state
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsPassword, setSettingsPassword] = useState("");
   const [settingsError, setSettingsError] = useState("");
-  // Multi-select state
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  // Password modal state
-  // Removed unused passwordInput and passwordError
-  // Router and params
   const router = useRouter();
   const { code } = useParams();
-  // Auth state
   const [user, setUser] = useState<User | null>(null);
-  // Gallery state
   type Gallery = {
     id: string;
     name: string;
     code: string;
     password?: string;
-    // add other fields as needed
   };
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [files, setFiles] = useState<GalleryFile[]>([]);
@@ -123,7 +113,6 @@ export default function GalleryPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Check authentication client-side
   useEffect(() => {
     async function checkAuth() {
       const { data } = await supabase.auth.getUser();
@@ -135,25 +124,15 @@ export default function GalleryPage() {
     }
     checkAuth();
   }, [router]);
-  // Drop ref
   const dropRef = useRef<HTMLDivElement>(null);
-  // Context menu and modal state
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; file: GalleryFile | null }>({ visible: false, x: 0, y: 0, file: null });
   const [modalFile, setModalFile] = useState<GalleryFile | null>(null);
-  // New Folder modal state (removed unused showNewFolderModal, newFolderName, newFolderError)
-  // Rename gallery state (already declared above)
 
-  // Open modal handler
-  // Open modal for file preview and metadata
   async function handleOpenModal(file: GalleryFile) {
     setModalFile(file);
     setContextMenu({ ...contextMenu, visible: false });
   }
 
-  // Copy file/image URL to clipboard
-  // Removed unused handleCopyUrl
-
-  // Download file
   function handleDownloadFile(file: GalleryFile) {
     const link = document.createElement('a');
     link.href = file.url;
@@ -163,13 +142,11 @@ export default function GalleryPage() {
     document.body.removeChild(link);
   }
 
-  // Bulk select
   function handleSelectFile(fileId: string) {
     setSelectedFiles(prev => prev.includes(fileId) ? prev.filter(id => id !== fileId) : [...prev, fileId]);
     setContextMenu({ ...contextMenu, visible: false });
   }
 
-  // Context menu open
   function handleContextMenu(e: React.MouseEvent, file: GalleryFile) {
     e.preventDefault();
     setContextMenu({ visible: true, x: e.clientX, y: e.clientY, file });
@@ -177,16 +154,12 @@ export default function GalleryPage() {
 
   async function handleDeleteFile(file: GalleryFile | null) {
     if (!file) return;
-    if (!window.confirm(`Delete ${file.name}? This cannot be undone.`)) {
+    if (!window.confirm(`Move ${file.name} to Trash? You can restore it later.`)) {
       toast('Delete cancelled.', { type: 'info' });
       return;
     }
-    // Extract file path from URL (adjust if your URL format is different)
-    const urlParts = file.url?.split('/');
-    const filePath = urlParts.slice(urlParts.length - 2).join('/');
-    await supabase.storage.from('gallery-files').remove([filePath]);
-    await supabase.from('gallery_files').delete().eq('id', file.id);
-    toast('File deleted.', { type: 'success' });
+    await supabase.from('gallery_files').update({ deleted: true }).eq('id', file.id);
+    toast('File moved to Trash.', { type: 'success' });
     if (gallery) {
       fetchFiles(gallery.id);
     }
@@ -194,13 +167,11 @@ export default function GalleryPage() {
 
   const handleFileUpload = useCallback(async (filesList: File[] | FileList) => {
     if (!gallery) return;
-    // Always fetch latest user data before uploading
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData?.user) {
       toast("You must be logged in to upload files.", { type: "error" });
       return;
     }
-    // Fetch latest user metadata from Supabase
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('username')
@@ -223,11 +194,9 @@ export default function GalleryPage() {
         toast(`Failed to upload ${file.name}: ${uploadError.message}`, { type: "error" });
         continue;
       }
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from("gallery-files")
         .getPublicUrl(filePath);
-      // Insert metadata into gallery_files table
       let dbType: 'file' | 'image' | 'folder' = 'file';
       if (file.type && file.type.startsWith('image')) dbType = 'image';
       const { error: dbError } = await supabase.from("gallery_files").insert({
@@ -248,13 +217,11 @@ export default function GalleryPage() {
       }
     }
     setUploading(false);
-    // Always fetch files after upload
     if (uploaded && gallery) {
       await fetchFiles(gallery.id);
     }
   }, [gallery]);
 
-  // Drag-and-drop support for dropper
   useEffect(() => {
     const dropArea = dropRef.current;
     if (!dropArea) return;
@@ -284,7 +251,6 @@ export default function GalleryPage() {
     };
   }, [handleFileUpload]);
 
-  // Hide context menu on click elsewhere
   useEffect(() => {
     function handleClick() {
       if (contextMenu.visible) setContextMenu({ ...contextMenu, visible: false });
@@ -293,7 +259,6 @@ export default function GalleryPage() {
     return () => window.removeEventListener('click', handleClick);
   }, [contextMenu]);
 
-// Fetch files helper
 async function fetchFiles(galleryId: string) {
   const { data: filesData, error } = await supabase
     .from("gallery_files")
@@ -305,7 +270,6 @@ async function fetchFiles(galleryId: string) {
   setFiles(filesData || []);
 }
 
-// Fix infinite loop in gallery and files fetch
 useEffect(() => {
   const fetchGallery = async () => {
     const { data: galleryData, error } = await supabase
@@ -337,13 +301,10 @@ useEffect(() => {
   fetchIfNeeded();
 }, [gallery, showPasswordModal]);
 
-  // Removed unused handlePasswordSubmit
-
   if (loading) {
     return <div className="p-8 text-center text-gray-400 text-xl">Loading gallery...</div>;
   }
 
-  // Sidebar navigation items
   const sidebarNav = [
     { name: "Dashboard", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="#6c63ff"/></svg>, href: "/dashboard" },
     { name: "My Files", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#b3b3ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#6c63ff"/></svg>, href: `/dashboard/gallery/${code}` },
@@ -351,17 +312,22 @@ useEffect(() => {
     { name: "Settings", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e7ff"/><rect x="10" y="6" width="4" height="12" rx="2" fill="#6c63ff"/></svg>, href: "/dashboard/settings" },
   ];
 
-  // Sort files by uploaded_at descending
   const sortedFiles = [...files].sort((a, b) => {
+    if (a.uploaded_at && b.uploaded_at) {
+      return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
+    }
+    return 0;
+  }).filter(f => !f.deleted);
+
+  // Trash files
+  const trashFiles = [...files].filter(f => f.deleted).sort((a, b) => {
     if (a.uploaded_at && b.uploaded_at) {
       return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
     }
     return 0;
   });
 
-  // ...existing code...
 
-  // Handle rename submit
   async function handleRenameSubmit() {
     if (!gallery || !renameValue.trim() || gallery.name === renameValue.trim()) {
       setRenaming(false);
@@ -385,7 +351,6 @@ useEffect(() => {
     }
   }
 
-  // Topbar with rename
   return (
     <div className="min-h-screen bg-[#f7f8fa] flex flex-col md:flex-row">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
@@ -398,11 +363,9 @@ useEffect(() => {
             aria-label="Open menu"
             onClick={() => setShowMobileMenu(true)}
           >
-            {/* Hamburger icon */}
             <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect y="5" width="24" height="2" rx="1" fill="#6c63ff"/><rect y="11" width="24" height="2" rx="1" fill="#6c63ff"/><rect y="17" width="24" height="2" rx="1" fill="#6c63ff"/></svg>
           </button>
         </div>
-        {/* Drawer menu */}
         {showMobileMenu && (
           <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex" onClick={() => setShowMobileMenu(false)}>
             <div className="bg-white w-64 h-full shadow-lg flex flex-col p-6" onClick={e => e.stopPropagation()}>
@@ -429,7 +392,6 @@ useEffect(() => {
           </div>
         )}
       </div>
-      {/* Desktop sidebar */}
       <aside className="hidden md:flex md:w-64 bg-white border-r border-[#e0e7ff] flex-col py-10 px-6 min-h-screen items-start justify-start">
         <div className="mb-10 flex items-center justify-center w-full">
           <Image src="/file.svg" alt="Logo" width={40} height={40} className="h-10 w-auto" />
@@ -594,9 +556,9 @@ useEffect(() => {
         {/* Debug output: show raw files, sortedFiles, and gallery object */}
         {/* ...existing code... */}
         {/* File table */}
-        <div className="bg-white rounded-2xl shadow p-4 md:p-8 overflow-x-auto">
+        <div className="bg-white rounded-2xl shadow p-4 md:p-8 overflow-x-auto mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 md:mb-6">
-            <div className="text-xl font-bold text-gray-900">Attached Files <span className="text-xs text-[#6c63ff] font-semibold ml-2">{files.length} Total</span></div>
+            <div className="text-xl font-bold text-gray-900">Attached Files <span className="text-xs text-[#6c63ff] font-semibold ml-2">{sortedFiles.length} Total</span></div>
             <div className="flex gap-3 items-center">
               {/* Search and collaborator UI temporarily hidden for debugging */}
             </div>
@@ -666,6 +628,48 @@ useEffect(() => {
                       ) : (
                         <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e7ff"/><path d="M7 13l3 3 7-7" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round"/></svg>
                       )}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Trash bin */}
+        <div className="bg-white rounded-2xl shadow p-4 md:p-8 overflow-x-auto">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 md:mb-6">
+            <div className="text-xl font-bold text-red-600">Trash <span className="text-xs text-[#6c63ff] font-semibold ml-2">{trashFiles.length} Deleted</span></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {trashFiles.length === 0 ? (
+              <div className="col-span-4 text-gray-400 text-center py-12 text-lg">Trash is empty.</div>
+            ) : (
+              trashFiles.map(file => (
+                <div
+                  key={file.id}
+                  className="bg-[#ffeaea] rounded-2xl shadow p-4 flex flex-col items-center justify-start relative border border-[#ff4d4f]"
+                >
+                  <span className="font-semibold text-gray-900 text-base text-center break-words w-full">{file.name}</span>
+                  <span className="text-gray-700 text-sm">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</span>
+                  <span className="text-gray-700 text-sm">{file.uploader_username || '--'}</span>
+                  <div className="flex gap-4 items-center justify-center w-full mt-2">
+                    <button className="text-green-600 hover:bg-green-100 p-2 rounded-full" title="Restore" onClick={async () => {
+                      await supabase.from('gallery_files').update({ deleted: false }).eq('id', file.id);
+                      toast('File restored!', { type: 'success' });
+                      if (gallery) fetchFiles(gallery.id);
+                    }}>
+                      <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 19V6M5 12l7-7 7 7" stroke="#16a34a" strokeWidth="2" strokeLinecap="round"/></svg>
+                    </button>
+                    <button className="text-[#ff4d4f] hover:bg-[#ffeaea] p-2 rounded-full" title="Delete Permanently" onClick={async () => {
+                      const urlParts = file.url?.split('/');
+                      const filePath = urlParts.slice(urlParts.length - 2).join('/');
+                      await supabase.storage.from('gallery-files').remove([filePath]);
+                      await supabase.from('gallery_files').delete().eq('id', file.id);
+                      toast('File permanently deleted.', { type: 'success' });
+                      if (gallery) fetchFiles(gallery.id);
+                    }}>
+                      <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6" stroke="#ff4d4f" strokeWidth="2" strokeLinecap="round"/></svg>
                     </button>
                   </div>
                 </div>
