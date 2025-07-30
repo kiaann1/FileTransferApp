@@ -158,10 +158,14 @@ export default function GalleryPage() {
       toast('Delete cancelled.', { type: 'info' });
       return;
     }
-    await supabase.from('gallery_files').update({ deleted: true }).eq('id', file.id);
-    toast('File moved to Trash.', { type: 'success' });
-    if (gallery) {
-      fetchFiles(gallery.id);
+    const { error } = await supabase.from('gallery_files').update({ deleted: true }).eq('id', file.id);
+    if (error) {
+      toast('Failed to move file to Trash.', { type: 'error' });
+    } else {
+      toast('File moved to Trash.', { type: 'success' });
+      if (gallery) {
+        await fetchFiles(gallery.id);
+      }
     }
   }
 
