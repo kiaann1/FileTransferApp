@@ -308,6 +308,7 @@ useEffect(() => {
   const sidebarNav = [
     { name: "Dashboard", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="#6c63ff"/></svg>, href: "/dashboard" },
     { name: "My Files", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3" fill="#b3b3ff"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#6c63ff"/></svg>, href: `/dashboard/gallery/${code}` },
+    { name: "Trash", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="8" rx="3" fill="#ff4d4f"/><path d="M6 6l12 12M6 18L18 6" stroke="#ff4d4f" strokeWidth="2" strokeLinecap="round"/></svg>, href: `/dashboard/gallery/${code}/trash` },
     { name: "Collaborators", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#b3b3ff"/><rect x="6" y="16" width="12" height="4" rx="2" fill="#6c63ff"/></svg>, href: "/dashboard/collaborators" },
     { name: "Settings", icon: <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e7ff"/><rect x="10" y="6" width="4" height="12" rx="2" fill="#6c63ff"/></svg>, href: "/dashboard/settings" },
   ];
@@ -637,46 +638,7 @@ useEffect(() => {
         </div>
 
         {/* Trash bin */}
-        <div className="bg-white rounded-2xl shadow p-4 md:p-8 overflow-x-auto">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 md:mb-6">
-            <div className="text-xl font-bold text-red-600">Trash <span className="text-xs text-[#6c63ff] font-semibold ml-2">{trashFiles.length} Deleted</span></div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {trashFiles.length === 0 ? (
-              <div className="col-span-4 text-gray-400 text-center py-12 text-lg">Trash is empty.</div>
-            ) : (
-              trashFiles.map(file => (
-                <div
-                  key={file.id}
-                  className="bg-[#ffeaea] rounded-2xl shadow p-4 flex flex-col items-center justify-start relative border border-[#ff4d4f]"
-                >
-                  <span className="font-semibold text-gray-900 text-base text-center break-words w-full">{file.name}</span>
-                  <span className="text-gray-700 text-sm">{file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : '--'}</span>
-                  <span className="text-gray-700 text-sm">{file.uploader_username || '--'}</span>
-                  <div className="flex gap-4 items-center justify-center w-full mt-2">
-                    <button className="text-green-600 hover:bg-green-100 p-2 rounded-full" title="Restore" onClick={async () => {
-                      await supabase.from('gallery_files').update({ deleted: false }).eq('id', file.id);
-                      toast('File restored!', { type: 'success' });
-                      if (gallery) fetchFiles(gallery.id);
-                    }}>
-                      <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 19V6M5 12l7-7 7 7" stroke="#16a34a" strokeWidth="2" strokeLinecap="round"/></svg>
-                    </button>
-                    <button className="text-[#ff4d4f] hover:bg-[#ffeaea] p-2 rounded-full" title="Delete Permanently" onClick={async () => {
-                      const urlParts = file.url?.split('/');
-                      const filePath = urlParts.slice(urlParts.length - 2).join('/');
-                      await supabase.storage.from('gallery-files').remove([filePath]);
-                      await supabase.from('gallery_files').delete().eq('id', file.id);
-                      toast('File permanently deleted.', { type: 'success' });
-                      if (gallery) fetchFiles(gallery.id);
-                    }}>
-                      <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6" stroke="#ff4d4f" strokeWidth="2" strokeLinecap="round"/></svg>
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        {/* Trash bin removed from gallery page. Access Trash from sidebar. */}
         {/* Preview modal (responsive layout) */}
         {modalFile && (
           <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(247, 248, 250, 0.85)' }} onClick={() => setModalFile(null)}>
