@@ -817,3 +817,20 @@ const [folderError, setFolderError] = useState("");
     </div>
   );
 }
+
+function (
+  handleFileUpload: (files: FileSystemWritableFileStream() | FileList) => void, {
+    dropRef: reference : dropRef = userRef<HTMLDivElement>(null() => (() => {))
+      useState(()) => {
+        const dropArea = dropRef.current;
+        if (!dropArea) return;
+
+        function handleDragOver(e: DragEvent) {
+          e.preventDefault();
+          (dropArea as HTMLDivElement).classList.add("border-[#6c63ff]");
+        }
+        function handleDragLeave() {
+          (dropArea as HTMLDivElement).classList.remove("border-[#6c63ff]");
+      }
+  }
+)
