@@ -158,15 +158,20 @@ export default function GalleryPage() {
       toast('Delete cancelled.', { type: 'info' });
       return;
     }
-    const { error } = await supabase.from('gallery_files').update({ deleted: true }).eq('id', file.id);
+    const { data, error } = await supabase
+      .from('gallery_files')
+      .update({ deleted: true })
+      .eq('id', file.id)
+      .select();
     if (error) {
       toast('Failed to move file to Trash.', { type: 'error' });
       console.error('Supabase update error:', error);
     } else {
       toast('File moved to Trash.', { type: 'success' });
-      if (gallery) {
-        await fetchFiles(gallery.id);
-      }
+      console.log('Supabase update result:', data);
+    }
+    if (gallery) {
+      await fetchFiles(gallery.id);
     }
   }
 
@@ -281,6 +286,7 @@ async function fetchFiles(galleryId: string) {
     return;
   }
   setFiles(filesData);
+  console.log('Fetched files:', filesData);
 }
 
 useEffect(() => {
