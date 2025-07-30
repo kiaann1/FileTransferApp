@@ -406,12 +406,14 @@ const [folderError, setFolderError] = useState("");
 
   // MoveFileToFolder must be after gallery and fetchFiles
   async function moveFileToFolder(fileId: string, folderId: string) {
+    console.log('moveFileToFolder called:', { fileId, folderId });
     const { error } = await supabase
       .from("gallery_files")
       .update({ parent_id: folderId })
       .eq("id", fileId);
     if (error) {
       toast("Failed to move file.", { type: "error" });
+      console.error('Supabase error moving file:', error);
     } else {
       toast("File moved!", { type: "success" });
       setDraggedFileId(null); // Reset drag state so UI updates
@@ -717,6 +719,7 @@ const [folderError, setFolderError] = useState("");
                 onDragLeave={() => setDragOverFolderId(null)}
                 onDrop={e => {
                   e.preventDefault();
+                  console.log('Drop event on folder:', folder.id, 'Dragged file:', draggedFileId);
                   if (draggedFileId) {
                     moveFileToFolder(draggedFileId, folder.id);
                   }
