@@ -1,20 +1,3 @@
-  // Drag-and-drop state
-  const [draggedFileId, setDraggedFileId] = useState<string | null>(null);
-  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
-
-  // Move file to folder
-  async function moveFileToFolder(fileId: string, folderId: string) {
-    const { error } = await supabase
-      .from("gallery_files")
-      .update({ parent_id: folderId })
-      .eq("id", fileId);
-    if (error) {
-      toast("Failed to move file.", { type: "error" });
-    } else {
-      toast("File moved!", { type: "success" });
-      if (gallery) await fetchFiles(gallery.id);
-    }
-  }
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { User } from '@supabase/supabase-js';
@@ -24,6 +7,14 @@ import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabaseClient";
 import Image from "next/image";
+
+export default function GalleryPage() {
+  // Drag-and-drop state
+  const [draggedFileId, setDraggedFileId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  // ...existing code...
+// Duplicate imports removed
+// ...existing code...
 
 
 function ImageClickOverlay({ file, handleOpenModal, toast }: ImageClickOverlayProps) {
@@ -106,12 +97,11 @@ type ImageClickOverlayProps = {
   toast: (content: import("react-toastify").ToastContent, options?: object) => void;
 };
 
-export default function GalleryPage() {
-  // Folder creation modal state
-  const [showFolderModal, setShowFolderModal] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
-  const [folderLoading, setFolderLoading] = useState(false);
-  const [folderError, setFolderError] = useState("");
+// Folder creation modal state
+const [showFolderModal, setShowFolderModal] = useState(false);
+const [newFolderName, setNewFolderName] = useState("");
+const [folderLoading, setFolderLoading] = useState(false);
+const [folderError, setFolderError] = useState("");
 
   async function handleCreateFolder() {
     if (!gallery || !newFolderName.trim()) {
@@ -409,6 +399,20 @@ export default function GalleryPage() {
     }
     return 0;
   });
+
+  // MoveFileToFolder must be after gallery and fetchFiles
+  async function moveFileToFolder(fileId: string, folderId: string) {
+    const { error } = await supabase
+      .from("gallery_files")
+      .update({ parent_id: folderId })
+      .eq("id", fileId);
+    if (error) {
+      toast("Failed to move file.", { type: "error" });
+    } else {
+      toast("File moved!", { type: "success" });
+      if (gallery) await fetchFiles(gallery.id);
+    }
+  }
 
   if (loading) {
     return <div className="p-8 text-center text-gray-400 text-xl">Loading gallery...</div>;
@@ -791,4 +795,3 @@ export default function GalleryPage() {
     </div>
   );
 }
-
