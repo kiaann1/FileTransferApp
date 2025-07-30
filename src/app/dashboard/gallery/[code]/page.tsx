@@ -318,6 +318,7 @@ const [folderError, setFolderError] = useState("");
   }, [contextMenu]);
 
   async function fetchFiles(galleryId: string) {
+    // Always fetch all files for gallery, then filter in UI by currentFolderId
     const { data: filesData, error } = await supabase
       .from("gallery_files")
       .select("*")
@@ -334,6 +335,7 @@ const [folderError, setFolderError] = useState("");
       return;
     }
     setFiles(filesData);
+    // UI will update automatically because files state changes
     console.log('Fetched files:', filesData);
   }
 
@@ -410,6 +412,7 @@ const [folderError, setFolderError] = useState("");
       toast("Failed to move file.", { type: "error" });
     } else {
       toast("File moved!", { type: "success" });
+      // Refetch files to update UI
       if (gallery) await fetchFiles(gallery.id);
     }
   }
