@@ -383,11 +383,12 @@ const [folderError, setFolderError] = useState("");
 
   // Filter files for current folder
   // Only show files/folders in the current folder
+  // Only show files/folders in the current folder
   const folders = files
-    .filter(f => f.type === 'folder' && !f.deleted && (f.parent_id === currentFolderId || (!f.parent_id && !currentFolderId)))
+    .filter(f => f.type === 'folder' && !f.deleted && ((currentFolderId === null && (f.parent_id === null || f.parent_id === undefined)) || f.parent_id === currentFolderId))
     .sort((a, b) => a.name.localeCompare(b.name));
   const regularFiles = files
-    .filter(f => f.type !== 'folder' && !f.deleted && (f.parent_id === currentFolderId || (!f.parent_id && !currentFolderId)))
+    .filter(f => f.type !== 'folder' && !f.deleted && ((currentFolderId === null && (f.parent_id === null || f.parent_id === undefined)) || f.parent_id === currentFolderId))
     .sort((a, b) => {
       if (a.uploaded_at && b.uploaded_at) {
         return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
@@ -703,10 +704,9 @@ const [folderError, setFolderError] = useState("");
             {folders.map(folder => (
               <div
                 key={folder.id}
-                className={`flex flex-col items-center justify-center p-4 rounded-lg border shadow cursor-pointer transition ${dragOverFolderId === folder.id ? 'bg-[#ffe066] border-[#e0b024]' : 'bg-[#fffbe6] border-[#fbbf24] hover:bg-[#fff3c4]'}`}
+                className={`flex flex-col items-center justify-center p-4 rounded-lg border shadow cursor-pointer transition ${dragOverFolderId === folder.id ? 'bg-[#ffe066] border-[#e0b024]' : 'bg-[#fffbe6] border-[#fbbf24] hover:bg-[#fff3c4]'} ${draggedFileId && dragOverFolderId === folder.id ? 'ring-2 ring-[#6c63ff]' : ''}`}
                 onClick={() => {
                   setCurrentFolderId(folder.id);
-                  // Optionally refetch files for UI update
                   if (gallery) fetchFiles(gallery.id);
                 }}
                 title={folder.name}
@@ -717,8 +717,11 @@ const [folderError, setFolderError] = useState("");
                 onDragLeave={() => setDragOverFolderId(null)}
                 onDrop={e => {
                   e.preventDefault();
+                  if (draggedFileId) {
+                    moveFileToFolder(draggedFileId, folder.id);
+                  }
+                  setDraggedFileId(null);
                   setDragOverFolderId(null);
-                  if (draggedFileId) moveFileToFolder(draggedFileId, folder.id);
                 }}
               >
                 <svg width="40" height="40" fill="none" viewBox="0 0 24 24" className="mb-2">
@@ -732,10 +735,16 @@ const [folderError, setFolderError] = useState("");
             {regularFiles.map(file => (
               <div
                 key={file.id}
-                className="flex flex-col items-center justify-center p-4 rounded-lg bg-white border border-[#e0e7ff] shadow cursor-pointer hover:bg-[#f3f4fe] transition"
+                className={`flex flex-col items-center justify-center p-4 rounded-lg bg-white border border-[#e0e7ff] shadow cursor-pointer hover:bg-[#f3f4fe] transition ${draggedFileId === file.id ? 'opacity-60 ring-2 ring-[#6c63ff]' : ''}`}
                 draggable
-                onDragStart={() => setDraggedFileId(file.id)}
-                onDragEnd={() => setDraggedFileId(null)}
+                onDragStart={e => {
+                  setDraggedFileId(file.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragEnd={() => {
+                  setDraggedFileId(null);
+                  setDragOverFolderId(null);
+                }}
                 onClick={() => handleOpenModal(file)}
                 onContextMenu={e => handleContextMenu(e, file)}
                 title={file.name}
