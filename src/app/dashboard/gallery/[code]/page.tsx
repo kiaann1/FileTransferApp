@@ -154,10 +154,17 @@ export default function GalleryPage() {
 
   async function handleDeleteFile(file: GalleryFile | null) {
     if (!file) return;
+    console.log('Attempting to delete file with id:', file.id);
     if (!window.confirm(`Move ${file.name} to Trash? You can restore it later.`)) {
       toast('Delete cancelled.', { type: 'info' });
       return;
     }
+    // Debug: log the update query
+    console.log('Update query:', {
+      table: 'gallery_files',
+      update: { deleted: true },
+      where: { id: file.id }
+    });
     const { data, error } = await supabase
       .from('gallery_files')
       .update({ deleted: true })
