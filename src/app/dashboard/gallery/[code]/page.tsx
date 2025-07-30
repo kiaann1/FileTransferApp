@@ -107,7 +107,7 @@ export default function GalleryPage() {
       gallery_id: gallery.id,
       name: newFolderName.trim(),
       type: "folder",
-      parent_id: null,
+      parent_id: currentFolderId ?? null,
       uploaded_at: new Date().toISOString(),
     });
     setFolderLoading(false);
