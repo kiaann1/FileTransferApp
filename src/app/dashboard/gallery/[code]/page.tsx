@@ -1,3 +1,20 @@
+  // Drag-and-drop state
+  const [draggedFileId, setDraggedFileId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+
+  // Move file to folder
+  async function moveFileToFolder(fileId: string, folderId: string) {
+    const { error } = await supabase
+      .from("gallery_files")
+      .update({ parent_id: folderId })
+      .eq("id", fileId);
+    if (error) {
+      toast("Failed to move file.", { type: "error" });
+    } else {
+      toast("File moved!", { type: "success" });
+      if (gallery) await fetchFiles(gallery.id);
+    }
+  }
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { User } from '@supabase/supabase-js';
@@ -677,9 +694,19 @@ export default function GalleryPage() {
             {folders.map(folder => (
               <div
                 key={folder.id}
-                className="flex flex-col items-center justify-center p-4 rounded-lg bg-[#fffbe6] border border-[#fbbf24] shadow cursor-pointer hover:bg-[#fff3c4] transition"
+                className={`flex flex-col items-center justify-center p-4 rounded-lg border shadow cursor-pointer transition ${dragOverFolderId === folder.id ? 'bg-[#ffe066] border-[#e0b024]' : 'bg-[#fffbe6] border-[#fbbf24] hover:bg-[#fff3c4]'}`}
                 onClick={() => setCurrentFolderId(folder.id)}
                 title={folder.name}
+                onDragOver={e => {
+                  e.preventDefault();
+                  setDragOverFolderId(folder.id);
+                }}
+                onDragLeave={() => setDragOverFolderId(null)}
+                onDrop={e => {
+                  e.preventDefault();
+                  setDragOverFolderId(null);
+                  if (draggedFileId) moveFileToFolder(draggedFileId, folder.id);
+                }}
               >
                 <svg width="40" height="40" fill="none" viewBox="0 0 24 24" className="mb-2">
                   <rect x="3" y="7" width="18" height="10" rx="3" fill="#fbbf24"/>
@@ -688,11 +715,14 @@ export default function GalleryPage() {
                 <span className="font-semibold text-[#b38600] text-base truncate w-full text-center">{folder.name}</span>
               </div>
             ))}
-            {/* Files */}
+            {/* Files/images are draggable */}
             {regularFiles.map(file => (
               <div
                 key={file.id}
                 className="flex flex-col items-center justify-center p-4 rounded-lg bg-white border border-[#e0e7ff] shadow cursor-pointer hover:bg-[#f3f4fe] transition"
+                draggable
+                onDragStart={() => setDraggedFileId(file.id)}
+                onDragEnd={() => setDraggedFileId(null)}
                 onClick={() => handleOpenModal(file)}
                 onContextMenu={e => handleContextMenu(e, file)}
                 title={file.name}
@@ -761,3 +791,4 @@ export default function GalleryPage() {
     </div>
   );
 }
+
